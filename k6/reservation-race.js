@@ -1,8 +1,7 @@
 import http from 'k6/http';
 import { check, fail } from 'k6';
-import exec from 'k6/execution';
 
-const VUS = Number(__ENV.VUS || 10000);
+const VUS = Number(__ENV.VUS || 100);
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8085';
 const LOGIN_ID = __ENV.LOGIN_ID || 'user1';
 const PASSWORD = __ENV.PASSWORD || 'Password123!';
@@ -20,8 +19,9 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_duration: ['p(95)<1000'],
-    checks: ['rate>0.95'],
+    // 서버 자체가 죽지 않는지 확인용
+    http_req_failed: ['rate<0.01'],
+    // checks threshold 제거 — before 시나리오에서 200이 여러 번 나오는 것이 버그 재현 성공
   },
 };
 
@@ -51,34 +51,28 @@ export function setup() {
   }
 
   const cookie = `accessToken=${accessToken}`;
-  const reservationIds = [];
 
-  for (let i = 0; i < VUS; i += 1) {
-    const createRes = http.post(
-      `${BASE_URL}/api/stays/${STAY_ID}/reservations`,
-      JSON.stringify({
-        startDate: START_DATE,
-        endDate: END_DATE,
-        personCnt: 2,
-      }),
-      jsonParams(cookie)
-    );
+  const createRes = http.post(
+    `${BASE_URL}/api/stays/${STAY_ID}/reservations`,
+    JSON.stringify({
+      startDate: START_DATE,
+      endDate: END_DATE,
+      personCnt: 2,
+    }),
+    jsonParams(cookie)
+  );
 
-    if (createRes.status !== 201) {
-      fail(`reservation create failed: status=${createRes.status}, body=${createRes.body}`);
-    }
-
-    reservationIds.push(createRes.json('reservationId'));
+  if (createRes.status !== 201) {
+    fail(`reservation create failed: status=${createRes.status}, body=${createRes.body}`);
   }
 
-  return { cookie, reservationIds };
+  const reservationId = createRes.json('reservationId');
+  return { cookie, reservationId };
 }
 
 export default function (data) {
-  const reservationId = data.reservationIds[exec.vu.idInTest - 1];
-
   const confirmRes = http.patch(
-    `${BASE_URL}/api/reservations/${reservationId}/confirm`,
+    `${BASE_URL}/api/reservations/${data.reservationId}/confirm`,
     JSON.stringify({
       startDate: START_DATE,
       endDate: END_DATE,
@@ -89,6 +83,7 @@ export default function (data) {
   );
 
   check(confirmRes, {
-    'confirm returns 200 or 409': (res) => res.status === 200 || res.status === 409,
+    'confirm 성공 (200)': (res) => res.status === 200,
+    'confirm 차단 (409)': (res) => res.status === 409,
   });
 }
