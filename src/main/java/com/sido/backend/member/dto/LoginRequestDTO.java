@@ -15,7 +15,7 @@ public record LoginRequestDTO(
 	@Size(min = 8, max = 20, message = "비밀번호는 8~20자 이내여야 합니다.")
 	@Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-={}\\[\\]:;\"'<>,.?/]).*$",
 		message = "비밀번호는 영문자, 숫자, 특수문자를 각각 최소 1개 이상 포함해야 합니다.")
-	@Schema(name = "password", example = "password123!")
+	@Schema(name = "password", example = "Password123!")
 	String password
 ) {
 }
