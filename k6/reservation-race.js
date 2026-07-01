@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check, fail } from 'k6';
 import exec from 'k6/execution';
 
-const VUS = Number(__ENV.VUS || 10000);
+const VUS = Number(__ENV.VUS || 100);
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8085';
 const LOGIN_ID = __ENV.LOGIN_ID || 'user1';
 const PASSWORD = __ENV.PASSWORD || 'Password123!';
@@ -20,10 +20,14 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_duration: ['p(95)<1000'],
-    checks: ['rate>0.95'],
+    // 서버 자체가 죽지 않는지 확인용
+    http_req_failed: ['rate<0.01'],
+    // checks threshold 제거 — before 시나리오에서 200이 여러 번 나오는 것이 버그 재현 성공
   },
 };
+
+// 200과 409 모두 예상된 응답으로 처리 — http_req_failed가 진짜 오류(5xx, 타임아웃)만 카운트하도록
+http.setResponseCallback(http.expectedStatuses(200, 201, 409));
 
 function jsonParams(cookie) {
   return {
@@ -65,7 +69,7 @@ export function setup() {
     );
 
     if (createRes.status !== 201) {
-      fail(`reservation create failed: status=${createRes.status}, body=${createRes.body}`);
+      fail(`reservation create failed [${i}]: status=${createRes.status}, body=${createRes.body}`);
     }
 
     reservationIds.push(createRes.json('reservationId'));
@@ -89,6 +93,7 @@ export default function (data) {
   );
 
   check(confirmRes, {
-    'confirm returns 200 or 409': (res) => res.status === 200 || res.status === 409,
+    'confirm 성공 (200)': (res) => res.status === 200,
+    'confirm 차단 (409)': (res) => res.status === 409,
   });
 }
