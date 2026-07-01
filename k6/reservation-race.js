@@ -1,5 +1,6 @@
 import http from 'k6/http';
 import { check, fail } from 'k6';
+import exec from 'k6/execution';
 
 const VUS = Number(__ENV.VUS || 100);
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8085';
@@ -24,6 +25,9 @@ export const options = {
     // checks threshold 제거 — before 시나리오에서 200이 여러 번 나오는 것이 버그 재현 성공
   },
 };
+
+// 200과 409 모두 예상된 응답으로 처리 — http_req_failed가 진짜 오류(5xx, 타임아웃)만 카운트하도록
+http.setResponseCallback(http.expectedStatuses(200, 201, 409));
 
 function jsonParams(cookie) {
   return {
@@ -51,28 +55,34 @@ export function setup() {
   }
 
   const cookie = `accessToken=${accessToken}`;
+  const reservationIds = [];
 
-  const createRes = http.post(
-    `${BASE_URL}/api/stays/${STAY_ID}/reservations`,
-    JSON.stringify({
-      startDate: START_DATE,
-      endDate: END_DATE,
-      personCnt: 2,
-    }),
-    jsonParams(cookie)
-  );
+  for (let i = 0; i < VUS; i += 1) {
+    const createRes = http.post(
+      `${BASE_URL}/api/stays/${STAY_ID}/reservations`,
+      JSON.stringify({
+        startDate: START_DATE,
+        endDate: END_DATE,
+        personCnt: 2,
+      }),
+      jsonParams(cookie)
+    );
 
-  if (createRes.status !== 201) {
-    fail(`reservation create failed: status=${createRes.status}, body=${createRes.body}`);
+    if (createRes.status !== 201) {
+      fail(`reservation create failed [${i}]: status=${createRes.status}, body=${createRes.body}`);
+    }
+
+    reservationIds.push(createRes.json('reservationId'));
   }
 
-  const reservationId = createRes.json('reservationId');
-  return { cookie, reservationId };
+  return { cookie, reservationIds };
 }
 
 export default function (data) {
+  const reservationId = data.reservationIds[exec.vu.idInTest - 1];
+
   const confirmRes = http.patch(
-    `${BASE_URL}/api/reservations/${data.reservationId}/confirm`,
+    `${BASE_URL}/api/reservations/${reservationId}/confirm`,
     JSON.stringify({
       startDate: START_DATE,
       endDate: END_DATE,
