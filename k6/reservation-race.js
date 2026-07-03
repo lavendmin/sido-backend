@@ -93,7 +93,8 @@ export default function (data) {
   );
 
   check(confirmRes, {
-    'confirm 성공 (200)': (res) => res.status === 200,
-    'confirm 차단 (409)': (res) => res.status === 409,
+    'confirm 성공 (200)':            (res) => res.status === 200,
+    'race window 409 (INSERT 충돌)': (res) => res.status === 409 && res.body.includes('다른 사용자'),
+    'SELECT 단계 정상 차단 (409)':   (res) => res.status === 409 && res.body.includes('예약 불가'),
   });
 }
