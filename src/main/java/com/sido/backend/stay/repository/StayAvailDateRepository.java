@@ -4,11 +4,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sido.backend.stay.entity.StayAvailDate;
+
+import jakarta.persistence.LockModeType;
 
 public interface StayAvailDateRepository extends JpaRepository<StayAvailDate, Long> {
 	/**
@@ -117,6 +120,29 @@ public interface StayAvailDateRepository extends JpaRepository<StayAvailDate, Lo
 					)
 		""")
 	long countOpenAndUnreservedOnOrAfter(@Param("stayId") Long stayId, @Param("end") LocalDate end);
+
+	/**
+	 * 비관적 락 — 예약 확정 동시성 제어
+	 * ORDER BY availableDate ASC: Sorted Locking — 항상 같은 순서로 잠가 데드락 방지
+	 */
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		SELECT sa FROM StayAvailDate sa
+			WHERE sa.stay.id = :stayId
+				AND sa.availableDate >= :start
+				AND sa.availableDate < :endExclusive
+				AND NOT EXISTS (
+					SELECT 1 FROM ReservationDay rd
+						WHERE rd.stay.id = sa.stay.id
+							AND rd.date = sa.availableDate
+					)
+			ORDER BY sa.availableDate ASC
+		""")
+	List<StayAvailDate> findWithLockInRange(
+		@Param("stayId") Long stayId,
+		@Param("start") LocalDate start,
+		@Param("endExclusive") LocalDate endExclusive
+	);
 
 	@Modifying
 	@Query("delete from StayAvailDate sa where sa.stay.id = :stayId")
