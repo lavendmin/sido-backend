@@ -123,6 +123,8 @@ public interface StayAvailDateRepository extends JpaRepository<StayAvailDate, Lo
 
 	/**
 	 * 비관적 락 — 예약 확정 동시성 제어
+	 * NOT EXISTS 제외: 서브쿼리는 MVCC 스냅샷 기준으로 읽혀서 최신 데이터 보장 안 됨
+	 * ReservationDay 충돌 확인은 별도 FOR UPDATE 쿼리로 분리 (AvailabilityChecker 참고)
 	 * ORDER BY availableDate ASC: Sorted Locking — 항상 같은 순서로 잠가 데드락 방지
 	 */
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -131,11 +133,6 @@ public interface StayAvailDateRepository extends JpaRepository<StayAvailDate, Lo
 			WHERE sa.stay.id = :stayId
 				AND sa.availableDate >= :start
 				AND sa.availableDate < :endExclusive
-				AND NOT EXISTS (
-					SELECT 1 FROM ReservationDay rd
-						WHERE rd.stay.id = sa.stay.id
-							AND rd.date = sa.availableDate
-					)
 			ORDER BY sa.availableDate ASC
 		""")
 	List<StayAvailDate> findWithLockInRange(
