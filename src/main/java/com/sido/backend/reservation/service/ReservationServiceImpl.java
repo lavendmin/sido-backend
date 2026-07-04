@@ -148,9 +148,9 @@ public class ReservationServiceImpl implements ReservationService {
 			newCnt = confirmRequest.reservationInfo().personCnt();
 		}
 
-		// 예약 요청 검증
+		// 예약 요청 검증 — SELECT FOR UPDATE로 날짜 행 선점 후 가용성 확인
 		reservationValidator.assertCoreRules(reservation.getStay(), newStart, newEnd, newCnt);
-		availabilityChecker.assertAllDatesAvailable(reservation.getStay().getId(), newStart, newEnd);
+		availabilityChecker.assertAllDatesAvailableWithLock(reservation.getStay().getId(), newStart, newEnd);
 
 		// 엔티티에 반영
 		reservation.setStartDate(newStart);
