@@ -2,12 +2,14 @@ package com.sido.backend.reservation.validation;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 
 import com.sido.backend.common.exception.ConflictException;
 import com.sido.backend.common.exception.ResourceGoneException;
 import com.sido.backend.stay.entity.Stay;
+import com.sido.backend.stay.entity.StayAvailDate;
 import com.sido.backend.stay.repository.StayAvailDateRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,15 @@ public class AvailabilityChecker {
 		if (requestDays != availableDays) {
 			throw new ConflictException("선택한 기간에 예약 불가 날짜가 포함되어 있습니다.");
 		}
+	}
+
+	public List<StayAvailDate> assertAllDatesAvailableOptimistic(Long stayId, LocalDate start, LocalDate end) {
+		long requestDays = ChronoUnit.DAYS.between(start, end);
+		List<StayAvailDate> openDates = stayAvailDateRepository.findEntitiesOpenAndUnreservedInRange(stayId, start, end);
+		if (openDates.size() != requestDays) {
+			throw new ConflictException("선택한 기간에 예약 불가 날짜가 포함되어 있습니다.");
+		}
+		return openDates;
 	}
 
 	public void assertStayIsActive(Stay stay) {
