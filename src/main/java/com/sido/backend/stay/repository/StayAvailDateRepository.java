@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sido.backend.stay.entity.StayAvailDate;
 
@@ -76,6 +77,22 @@ public interface StayAvailDateRepository extends JpaRepository<StayAvailDate, Lo
 		""")
 	List<LocalDate> findOpenAndUnreservedInRange(@Param("stayId") Long stayId, LocalDate start, LocalDate endExclusive);
 
+	// 낙관적 락용 — 엔티티(version 포함) 반환
+	@Query("""
+		select sa from StayAvailDate sa
+			where sa.stay.id = :stayId
+				and sa.availableDate >= :start
+				and sa.availableDate < :endExclusive
+				and not exists (
+					select 1 from ReservationDay rd
+						where rd.stay.id = sa.stay.id
+							and rd.date = sa.availableDate
+					)
+			order by sa.availableDate asc
+		""")
+	List<StayAvailDate> findEntitiesOpenAndUnreservedInRange(@Param("stayId") Long stayId,
+		@Param("start") LocalDate start, @Param("endExclusive") LocalDate endExclusive);
+
 	// after(포함) 이후 '오픈 + 예약 미점유' 날짜 목록 조회
 	@Query("""
 		select sa.availableDate from StayAvailDate sa
@@ -117,6 +134,12 @@ public interface StayAvailDateRepository extends JpaRepository<StayAvailDate, Lo
 					)
 		""")
 	long countOpenAndUnreservedOnOrAfter(@Param("stayId") Long stayId, @Param("end") LocalDate end);
+
+	// 낙관적 락 CAS: version 일치할 때만 1 증가. 영향받은 행 0이면 충돌
+	@Transactional
+	@Modifying
+	@Query("UPDATE StayAvailDate sa SET sa.version = sa.version + 1 WHERE sa.id = :id AND sa.version = :version")
+	int bumpVersion(@Param("id") Long id, @Param("version") Long version);
 
 	@Modifying
 	@Query("delete from StayAvailDate sa where sa.stay.id = :stayId")

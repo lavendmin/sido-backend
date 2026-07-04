@@ -47,6 +47,8 @@ import com.sido.backend.reservation.repository.ReservationRepository.Reservation
 import com.sido.backend.reservation.validation.AvailabilityChecker;
 import com.sido.backend.reservation.validation.ReservationValidator;
 import com.sido.backend.stay.entity.Stay;
+import com.sido.backend.stay.entity.StayAvailDate;
+import com.sido.backend.stay.repository.StayAvailDateRepository;
 import com.sido.backend.stay.repository.StayRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -63,6 +65,7 @@ public class ReservationServiceImpl implements ReservationService {
 	private final StayRepository stayRepository;
 	private final MemberRepository memberRepository;
 	private final HostMemberRepository hostMemberRepository;
+	private final StayAvailDateRepository stayAvailDateRepository;
 	private final ReservationValidator reservationValidator;
 	private final AvailabilityChecker availabilityChecker;
 	private final SimpMessagingTemplate messagingTemplate;
@@ -148,15 +151,16 @@ public class ReservationServiceImpl implements ReservationService {
 			newCnt = confirmRequest.reservationInfo().personCnt();
 		}
 
-		// 예약 요청 검증
+		// 예약 요청 검증 + 낙관적 락용 StayAvailDate 엔티티 획득 (version 스냅샷)
 		reservationValidator.assertCoreRules(reservation.getStay(), newStart, newEnd, newCnt);
-		availabilityChecker.assertAllDatesAvailable(reservation.getStay().getId(), newStart, newEnd);
+		List<StayAvailDate> openDates = availabilityChecker.assertAllDatesAvailableOptimistic(
+			reservation.getStay().getId(), newStart, newEnd);
 
-		// 엔티티에 반영
+		// 날짜·인원만 먼저 세팅 (isFarm은 flush 이후에 세팅 — flush 전에 세팅하면
+		// resrvStatus=PENDING + isFarm=non-null 중간 상태가 @Check 제약 위반)
 		reservation.setStartDate(newStart);
 		reservation.setEndDate(newEnd);
 		reservation.setPersonCnt(newCnt);
-		reservation.setIsFarm(confirmRequest.reservationInfo().isFarm());
 
 		List<ReservationDay> reservationDays = new ArrayList<>();
 		for (LocalDate d = newStart; d.isBefore(newEnd); d = d.plusDays(1)) {
@@ -168,9 +172,20 @@ public class ReservationServiceImpl implements ReservationService {
 			reservationDays.add(day);
 		}
 
+		// CAS: version 일치할 때만 bump. 0이면 다른 트랜잭션이 먼저 commit한 것 → 즉시 409
+		// openDates는 availableDate ASC 정렬 → 모든 VU가 같은 순서로 lock → deadlock 방지
+		for (StayAvailDate openDate : openDates) {
+			int updated = stayAvailDateRepository.bumpVersion(openDate.getId(), openDate.getVersion());
+			if (updated == 0) {
+				throw new ConflictException("다른 사용자가 먼저 예약을 확정했습니다.");
+			}
+		}
+
+		reservation.setIsFarm(confirmRequest.reservationInfo().isFarm());
+
 		try {
 			reservationDayRepository.saveAll(reservationDays);
-		} catch (DataIntegrityViolationException e) { // 409 CONFLICT
+		} catch (DataIntegrityViolationException e) {
 			throw new ConflictException("다른 사용자가 먼저 예약을 확정했습니다.");
 		}
 

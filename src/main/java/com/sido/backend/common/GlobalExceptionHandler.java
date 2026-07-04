@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -59,6 +60,12 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponseDTO> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
 			.body(new ErrorResponseDTO("데이터 충돌이 발생했습니다.", "CONFLICT"));
+	}
+
+	@ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+	public ResponseEntity<ErrorResponseDTO> handleOptimisticLockingFailure(ObjectOptimisticLockingFailureException ex) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+			.body(new ErrorResponseDTO("다른 사용자가 먼저 예약을 확정했습니다.", "CONFLICT"));
 	}
 
 	@ExceptionHandler(ResourceGoneException.class)
