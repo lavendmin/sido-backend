@@ -176,8 +176,6 @@ public class ReservationServiceImpl implements ReservationService {
 
 		reservation.setResrvStatus(ResrvStatus.RESERVED);
 		reservation.setReservedAt(LocalDateTime.now());
-
-		reservationRepository.save(reservation);
 		log.info("예약이 성공적으로 확정되었습니다: reservationId={}", reservationId);
 
 		// 관리자에게 예약 확정 알림 보내기
