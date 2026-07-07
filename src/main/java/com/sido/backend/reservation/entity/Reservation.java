@@ -56,6 +56,9 @@ public class Reservation extends BaseEntity {
 	@Column
 	private LocalDateTime reservedAt; // resrvStatus가 RESERVED가 된 순간
 
+	@Column
+	private LocalDateTime pendingExpiresAt; // PENDING 만료 시각 (createReservation 시 now + 10분)
+
 	@ManyToOne
 	@JoinColumn(name = "stay", foreignKey = @ForeignKey(
 		name = "fk_Reservation_Stay",
