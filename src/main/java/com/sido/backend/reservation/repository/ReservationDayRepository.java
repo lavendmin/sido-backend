@@ -38,7 +38,7 @@ public interface ReservationDayRepository extends JpaRepository<ReservationDay, 
 					AND rd.date >= :start
 					AND rd.date < :endExclusive
 		""")
-	List<ReservationDay> findWithLockByDateRange(
+	List<ReservationDay> findWithLockInRange(
 		@Param("stayId") Long stayId,
 		@Param("start") LocalDate start,
 		@Param("endExclusive") LocalDate endExclusive

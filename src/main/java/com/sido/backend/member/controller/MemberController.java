@@ -92,8 +92,6 @@ public class MemberController {
 		@CookieValue(value = "refreshToken", required = false) String refreshToken,
 		HttpServletResponse response) {
 
-		System.out.println("REFRESH CONTROLLER ****** refreshToken: " + refreshToken);
-
 		if (refreshToken == null || refreshToken.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Refresh token이 없습니다.");
 		}
@@ -106,10 +104,6 @@ public class MemberController {
 			String newAccessToken = JwtUtil.generateToken(claims, 60); //1시간
 			String newRefreshToken = JwtUtil.generateToken(claims, 600); //10시간
 			String role = (String)claims.get("role"); // role 정보 추출
-
-			System.out.println("REFRESH CONTROLLER ****** - newAccessToken: " + newAccessToken);
-			System.out.println("REFRESH CONTROLLER ****** - newRefreshToken: " + newRefreshToken);
-			System.out.println("REFRESH CONTROLLER ****** - role: " + role);
 
 			// 새로운 쿠키 설정
 			Cookie newAccessCookie = new Cookie("accessToken", newAccessToken);
@@ -134,8 +128,6 @@ public class MemberController {
 			response.addCookie(newAccessCookie);
 			response.addCookie(newRefreshCookie);
 			response.addCookie(newRoleCookie);
-
-			System.out.println("REFRESH CONTROLLER ****** try - response: " + response);
 
 			// 응답 본문에 role 정보 포함
 			return ResponseEntity.ok().body(Map.of(

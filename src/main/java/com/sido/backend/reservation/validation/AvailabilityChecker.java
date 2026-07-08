@@ -25,8 +25,6 @@ public class AvailabilityChecker {
 	public void assertAllDatesAvailable(Long stayId, LocalDate start, LocalDate end) {
 		long requestDays = ChronoUnit.DAYS.between(start, end);
 		long availableDays = stayAvailDateRepository.countOpenAndUnreservedInRange(stayId, start, end);
-		System.out.println("requestDays = " + requestDays);
-		System.out.println("availableDays = " + availableDays);
 		if (requestDays != availableDays) {
 			throw new ConflictException("선택한 기간에 예약 불가 날짜가 포함되어 있습니다.");
 		}
@@ -39,7 +37,7 @@ public class AvailabilityChecker {
 	// NOT EXISTS 서브쿼리는 MVCC 스냅샷을 읽어 VU1 커밋 내용을 못 보므로 이 방식 사용
 	public void assertAllDatesAvailableWithLock(Long stayId, LocalDate start, LocalDate end) {
 		List<StayAvailDate> openDates = stayAvailDateRepository.findWithLockInRange(stayId, start, end);
-		List<ReservationDay> reservedDays = reservationDayRepository.findWithLockByDateRange(stayId, start, end);
+		List<ReservationDay> reservedDays = reservationDayRepository.findWithLockInRange(stayId, start, end);
 
 		long requestDays = ChronoUnit.DAYS.between(start, end);
 		long availableDays = openDates.size() - reservedDays.size();

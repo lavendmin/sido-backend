@@ -39,17 +39,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	@Override
 	protected boolean shouldNotFilter(@NonNull HttpServletRequest request)  {
 		String path = request.getRequestURI();
-		System.out.println("*** [JWT] shouldNotFilter path = " + path);
 		boolean isNotNeed = Arrays.stream(excludePatterns)
 			.anyMatch(pattern -> pathMatcher.match(pattern, path));
-		System.out.println("isNotNeed = " + isNotNeed);
 		return isNotNeed;
 	}
 
 	@Override
 	protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
 		@NonNull FilterChain filterChain) throws ServletException, IOException {
-		System.out.println("*** [JWT} doFilterInternal path = " + request.getRequestURI());
 
 		String token = null;
 
@@ -98,8 +95,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 			// 올바른 Authorization을 저장하여 어디서든 불러올 수 있다!
 			SecurityContextHolder.getContext().setAuthentication(authenticationToken);
-
-			System.out.println("*** [JWT] setAuthentication principal = " + dto.getClass().getName());
 
 		} catch (Exception e) {
 			// 토큰 만료
