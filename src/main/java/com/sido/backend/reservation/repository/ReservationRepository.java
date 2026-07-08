@@ -1,15 +1,21 @@
 package com.sido.backend.reservation.repository;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sido.backend.reservation.entity.Reservation;
+import com.sido.backend.reservation.entity.ResrvStatus;
 import com.sido.backend.reservation.entity.VisitStatus;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+	// PendingExpirySweeper용 — Keyspace Notification 유실 시 만료된 PENDING 회수
+	List<Reservation> findByResrvStatusAndPendingExpiresAtBefore(ResrvStatus resrvStatus, LocalDateTime now);
+
 	@Query("""
 		select
 		    coalesce(sum(case when r.visitStatus = com.sido.backend.reservation.entity.VisitStatus.UPCOMING then 1 else 0 end), 0) as upcomingCnt,

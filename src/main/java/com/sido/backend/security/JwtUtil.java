@@ -32,7 +32,6 @@ public class JwtUtil {
 			.setExpiration(Date.from(ZonedDateTime.now().plusMinutes(min).toInstant())) // 만료시간
 			.signWith(KEY).compact();
 
-		System.out.println("jwtStr = " + jwtStr);
 		return jwtStr;
 	}
 

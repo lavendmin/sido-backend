@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -66,6 +67,7 @@ public class ReservationServiceImpl implements ReservationService {
 	private final ReservationValidator reservationValidator;
 	private final AvailabilityChecker availabilityChecker;
 	private final SimpMessagingTemplate messagingTemplate;
+	private final DateHoldService dateHoldService;
 
 	@Value("${app.s3.publicBaseUrl}")
 	private String publicBaseUrl;
@@ -95,6 +97,13 @@ public class ReservationServiceImpl implements ReservationService {
 		reservationValidator.assertCoreRules(stay, startDate, endDate, personCnt);
 		availabilityChecker.assertAllDatesAvailable(stayId, startDate, endDate);
 
+		List<LocalDate> dates = startDate.datesUntil(endDate).collect(Collectors.toList());
+
+		boolean held = dateHoldService.tryHoldAll(stayId, dates, memberId);
+		if (!held) {
+			throw new ConflictException("이미 다른 사용자가 선택 중인 날짜입니다.");
+		}
+
 		Reservation reservation = new Reservation();
 		reservation.setStay(stay);
 		reservation.setMember(member);
@@ -102,8 +111,15 @@ public class ReservationServiceImpl implements ReservationService {
 		reservation.setStartDate(startDate);
 		reservation.setEndDate(endDate);
 		reservation.setPersonCnt(personCnt);
+		reservation.setPendingExpiresAt(LocalDateTime.now().plusMinutes(DateHoldService.HOLD_MINUTES));
 
-		reservationRepository.save(reservation);
+		try {
+			reservationRepository.save(reservation);
+			dateHoldService.setExpiryAlarm(reservation.getId());
+		} catch (Exception e) {
+			dateHoldService.releaseDateHolds(stayId, dates, memberId);
+			throw e;
+		}
 
 		return toCreateResponseDTO(reservation);
 	}
@@ -174,10 +190,15 @@ public class ReservationServiceImpl implements ReservationService {
 			throw new ConflictException("다른 사용자가 먼저 예약을 확정했습니다.");
 		}
 
+		dateHoldService.releaseAll(
+			reservation.getStay().getId(),
+			newStart.datesUntil(newEnd).collect(Collectors.toList()),
+			reservationId,
+			memberId
+		);
+
 		reservation.setResrvStatus(ResrvStatus.RESERVED);
 		reservation.setReservedAt(LocalDateTime.now());
-
-		reservationRepository.save(reservation);
 		log.info("예약이 성공적으로 확정되었습니다: reservationId={}", reservationId);
 
 		// 관리자에게 예약 확정 알림 보내기
@@ -243,6 +264,11 @@ public class ReservationServiceImpl implements ReservationService {
 		if (reservation.getResrvStatus() == ResrvStatus.CANCELLED) {
 			return;
 		}
+
+		List<LocalDate> dates = reservation.getStartDate()
+			.datesUntil(reservation.getEndDate())
+			.collect(Collectors.toList());
+		dateHoldService.releaseAll(reservation.getStay().getId(), dates, reservationId, memberId);
 
 		reservation.setResrvStatus(ResrvStatus.CANCELLED); // 예약 취소 상태로
 		reservation.setVisitStatus(null); // 방문 상태 null로
