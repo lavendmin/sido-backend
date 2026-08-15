@@ -64,6 +64,7 @@ public class StayServiceImpl implements StayService {
 	private final ReservationDayRepository reservationDayRepository;
 	private final ReservationRepository reservationRepository;
 	private final HostMemberRepository hostMemberRepository;
+	private final StayDetailCacheService stayDetailCacheService;
 	@Value("${app.s3.publicBaseUrl}")
 	private String publicBaseUrl;
 	@Value("${app.s3.bucket}")
@@ -153,7 +154,7 @@ public class StayServiceImpl implements StayService {
 			}
 			deleteMany(tempKeys);
 		}
-		return toResponseDetailDTO(stay);
+		return stayDetailCacheService.toResponseDetailDTO(stay);
 	}
 
 	@Override
@@ -165,7 +166,9 @@ public class StayServiceImpl implements StayService {
 		stay.setAreaSize(stayDTO.areaSize());
 		stay.setDescription(stayDTO.description());
 
-		return toEditDTO(stayRepository.save(stay));
+		StayUpdateDTO result = toEditDTO(stayRepository.save(stay));
+		stayDetailCacheService.evictDetail(stayId); // 수정 반영 — 낡은 상세 캐시 즉시 무효화
+		return result;
 	}
 
 	@Override
@@ -181,9 +184,8 @@ public class StayServiceImpl implements StayService {
 
 	@Override
 	public StayResponseDetailDTO getStayDetail(Long stayId, LocalDate startDate, LocalDate endDate) {
-		Stay stay = stayRepository.findById(stayId).orElseThrow(
-			() -> new EntityNotFoundException("해당 사랑방을 찾을 수 없습니다.")
-		);
+		// 정적 정보는 캐시에서 (미스 시 DB 조회 후 적재). 존재하지 않는 stayId면 여기서 404
+		StayResponseDetailDTO stayResponseDetailDTO = stayDetailCacheService.getDetailBase(stayId);
 
 		StayResrvStatus status;
 
@@ -192,13 +194,15 @@ public class StayServiceImpl implements StayService {
 		boolean isAdmin = authentication.getAuthorities().stream()
 			.anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
 
+		// 예약 상태는 가용성 파생 데이터라 캐싱하지 않고 매 요청 DB 기준으로 조회
 		if (isAdmin) {
-			status = stayRepository.findResrvStatusByStayIdForHost(stay.getId());
+			status = stayRepository.findResrvStatusByStayIdForHost(stayId);
 		} else {
 			status = stayRepository.findResrvStatusInRangeByStayId(stayId, startDate, endDate);
 		}
 
-		StayResponseDetailDTO stayResponseDetailDTO = toResponseDetailDTO(stay);
+		// Redis 캐시는 조회마다 역직렬화된 새 복사본을 반환하므로 이 세터가 캐시 원본을 오염시키지 않는다
+		// (로컬 캐시였다면 공유 객체 변조가 되므로 이 구조를 쓰면 안 됨)
 		stayResponseDetailDTO.setStayResrvStatus(status);
 
 		return stayResponseDetailDTO;
@@ -231,6 +235,8 @@ public class StayServiceImpl implements StayService {
 		stayRepository.save(stay);
 		int deletedAvailDatesCnt = stayAvailDateRepository.deleteStayAvailDatesOnAfter(stayId, LocalDate.now());
 		log.info("deletedAvailDatesCnt = {}", deletedAvailDatesCnt);
+
+		stayDetailCacheService.evictDetail(stayId); // 삭제 반영 — 캐시에 isDeleted=false로 남아있으면 안 됨
 
 		return new StayDeleteDTO(true, false);
 	}
@@ -320,30 +326,6 @@ public class StayServiceImpl implements StayService {
 			.imageURL(firstImageURL)
 			.hostName(stay.getHostName())
 			.build();
-	}
-
-	private StayResponseDetailDTO toResponseDetailDTO(Stay stay) {
-		StayResponseDetailDTO.StayResponseDetailDTOBuilder builder = StayResponseDetailDTO.builder()
-			.id(stay.getId())
-			.title(stay.getTitle())
-			.address(stay.getAddress())
-			.detailAddress(stay.getDetailAddress())
-			.capacity(stay.getCapacity())
-			.areaSize(stay.getAreaSize())
-			.description(stay.getDescription())
-			.isHomestay(stay.getIsHomestay())
-			.isDeleted(!stay.getIsActive());
-
-		// StayImage → DTO 변환
-		List<String> imageUrls = stay.getImages().stream()
-			.map(img ->
-				publicBaseUrl + "/" + img.getS3Key() // URL
-			)
-			.toList();
-
-		builder.images(imageUrls);
-
-		return builder.build();
 	}
 
 	private StayUpdateDTO toEditDTO(Stay stay) {
