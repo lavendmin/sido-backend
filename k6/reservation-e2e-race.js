@@ -107,11 +107,10 @@ export default function (data) {
   const reservationId = createRes.json('reservationId');
 
   // 2단계: 자기 예약 확정 시도 (develop에서는 여기서 100건이 락 경합)
+  // confirm 계약: 기간은 create에서 확정된 값으로 고정 → 요청에 startDate/endDate를 싣지 않는다.
   const confirmRes = http.patch(
     `${BASE_URL}/api/reservations/${reservationId}/confirm`,
     JSON.stringify({
-      startDate: START_DATE,
-      endDate: END_DATE,
       personCnt: 2,
       isFarm: false,
     }),
