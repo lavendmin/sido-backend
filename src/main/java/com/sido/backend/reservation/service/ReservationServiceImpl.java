@@ -135,7 +135,9 @@ public class ReservationServiceImpl implements ReservationService {
 	public ReservationConfirmResponseDTO confirmReservation(Long memberId, Long reservationId,
 		ReservationConfirmRequestDTO confirmRequest) {
 		log.info("예약 확정 프로세스 시작: reservationId={}", reservationId);
-		Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(
+		// 예약 행을 PESSIMISTIC_WRITE로 잠가 confirm·cancel·만료 회수의 수명주기 전이를 직렬화한다.
+		// 잠금을 얻은 뒤의 최신 상태·소유자·deadline으로만 판정한다.
+		Reservation reservation = reservationRepository.findByIdForUpdate(reservationId).orElseThrow(
 			() -> new EntityNotFoundException("해당 예약을 찾을 수 없습니다.")
 		);
 
@@ -149,39 +151,28 @@ public class ReservationServiceImpl implements ReservationService {
 		}
 
 		reservationValidator.assertConfirmable(reservation); // PENDING인지 검증
+		reservationValidator.assertNotExpired(reservation); // pendingExpiresAt 경과 시 410, 점유 행 만들지 않음
 
-		if (confirmRequest.reservationInfo().isFarm() == null) {
+		if (confirmRequest.isFarm() == null) {
 			throw new BadRequestException("농장 체험 유무를 선택해야 합니다.");
 		}
 
-		// 엔티티의 현재 값으로 기본 세팅
-		LocalDate newStart = reservation.getStartDate();
-		LocalDate newEnd = reservation.getEndDate();
-		Integer newCnt = reservation.getPersonCnt();
-
-		reservationValidator.assertDatesPairOrNone(confirmRequest.reservationInfo().startDate(),
-			confirmRequest.reservationInfo().endDate()); // startDate, endDate 둘다 있거나 둘다 없거나
-
-		if (confirmRequest.reservationInfo().startDate() != null) { // 날짜 들어왔으면 변경사항으로 덮어쓰기
-			newStart = confirmRequest.reservationInfo().startDate();
-			newEnd = confirmRequest.reservationInfo().endDate();
-		}
-		if (confirmRequest.reservationInfo().personCnt() != null) { // 인원수 들어왔으면 변경사항으로 덮어쓰기
-			newCnt = confirmRequest.reservationInfo().personCnt();
-		}
+		// 확정은 저장된 원래 기간으로만 진행한다 (요청에서 날짜를 받지 않음). 인원수·농장 체험만 수정 허용.
+		LocalDate startDate = reservation.getStartDate();
+		LocalDate endDate = reservation.getEndDate();
+		Integer personCnt =
+			(confirmRequest.personCnt() != null) ? confirmRequest.personCnt() : reservation.getPersonCnt();
 
 		// 예약 요청 검증 — SELECT FOR UPDATE로 날짜 행 선점 후 가용성 확인
-		reservationValidator.assertCoreRules(reservation.getStay(), newStart, newEnd, newCnt);
-		availabilityChecker.assertAllDatesAvailableWithLock(reservation.getStay().getId(), newStart, newEnd);
+		reservationValidator.assertCoreRules(reservation.getStay(), startDate, endDate, personCnt);
+		availabilityChecker.assertAllDatesAvailableWithLock(reservation.getStay().getId(), startDate, endDate);
 
 		// 엔티티에 반영
-		reservation.setStartDate(newStart);
-		reservation.setEndDate(newEnd);
-		reservation.setPersonCnt(newCnt);
-		reservation.setIsFarm(confirmRequest.reservationInfo().isFarm());
+		reservation.setPersonCnt(personCnt);
+		reservation.setIsFarm(confirmRequest.isFarm());
 
 		List<ReservationDay> reservationDays = new ArrayList<>();
-		for (LocalDate d = newStart; d.isBefore(newEnd); d = d.plusDays(1)) {
+		for (LocalDate d = startDate; d.isBefore(endDate); d = d.plusDays(1)) {
 			ReservationDay day = ReservationDay.builder()
 				.date(d)
 				.reservation(reservation)
@@ -198,7 +189,7 @@ public class ReservationServiceImpl implements ReservationService {
 
 		dateHoldService.releaseAll(
 			reservation.getStay().getId(),
-			newStart.datesUntil(newEnd).collect(Collectors.toList()),
+			startDate.datesUntil(endDate).collect(Collectors.toList()),
 			reservationId,
 			reservation.getHoldToken()
 		);
