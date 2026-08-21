@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
@@ -39,6 +40,7 @@ import com.sido.backend.stay.dto.StayUpdateDTO;
 import com.sido.backend.stay.entity.Stay;
 import com.sido.backend.stay.entity.StayAvailDate;
 import com.sido.backend.stay.entity.StayImage;
+import com.sido.backend.stay.event.StayDetailChangedEvent;
 import com.sido.backend.stay.repository.StayAvailDateRepository;
 import com.sido.backend.stay.repository.StayImageRepository;
 import com.sido.backend.stay.repository.StayRepository;
@@ -65,6 +67,7 @@ public class StayServiceImpl implements StayService {
 	private final ReservationRepository reservationRepository;
 	private final HostMemberRepository hostMemberRepository;
 	private final StayDetailCacheService stayDetailCacheService;
+	private final ApplicationEventPublisher eventPublisher;
 	@Value("${app.s3.publicBaseUrl}")
 	private String publicBaseUrl;
 	@Value("${app.s3.bucket}")
@@ -158,6 +161,7 @@ public class StayServiceImpl implements StayService {
 	}
 
 	@Override
+	@Transactional
 	public StayUpdateDTO editStay(long stayId, long memberId, StayUpdateDTO stayDTO) {
 		Stay stay = stayRepository.findById(stayId).orElseThrow(
 			() -> new EntityNotFoundException("해당 사랑방을 찾을 수 없습니다.")
@@ -167,7 +171,9 @@ public class StayServiceImpl implements StayService {
 		stay.setDescription(stayDTO.description());
 
 		StayUpdateDTO result = toEditDTO(stayRepository.save(stay));
-		stayDetailCacheService.evictDetail(stayId); // 수정 반영 — 낡은 상세 캐시 즉시 무효화
+		// 커밋 이후 무효화: 이벤트만 발행하고 실제 evict 는 AFTER_COMMIT 리스너가 수행한다.
+		// 롤백 시 리스너가 실행되지 않아 정상 캐시가 불필요하게 사라지지 않는다.
+		eventPublisher.publishEvent(new StayDetailChangedEvent(stayId));
 		return result;
 	}
 
@@ -236,7 +242,8 @@ public class StayServiceImpl implements StayService {
 		int deletedAvailDatesCnt = stayAvailDateRepository.deleteStayAvailDatesOnAfter(stayId, LocalDate.now());
 		log.info("deletedAvailDatesCnt = {}", deletedAvailDatesCnt);
 
-		stayDetailCacheService.evictDetail(stayId); // 삭제 반영 — 캐시에 isDeleted=false로 남아있으면 안 됨
+		// 커밋 이후 무효화: 커밋 전 evict 후 재조회가 아직 커밋 안 된 isDeleted=false 를 재적재하던 공백을 막는다.
+		eventPublisher.publishEvent(new StayDetailChangedEvent(stayId));
 
 		return new StayDeleteDTO(true, false);
 	}
