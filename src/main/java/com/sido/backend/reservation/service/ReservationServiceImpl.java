@@ -10,6 +10,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.sido.backend.common.dto.PageResponseDTO;
 import com.sido.backend.common.exception.BadRequestException;
@@ -42,6 +45,7 @@ import com.sido.backend.reservation.entity.Reservation;
 import com.sido.backend.reservation.entity.ReservationDay;
 import com.sido.backend.reservation.entity.ResrvStatus;
 import com.sido.backend.reservation.entity.VisitStatus;
+import com.sido.backend.reservation.event.ReservationHoldReleaseEvent;
 import com.sido.backend.reservation.repository.ReservationDayRepository;
 import com.sido.backend.reservation.repository.ReservationQDslRepository;
 import com.sido.backend.reservation.repository.ReservationRepository;
@@ -69,6 +73,7 @@ public class ReservationServiceImpl implements ReservationService {
 	private final AvailabilityChecker availabilityChecker;
 	private final SimpMessagingTemplate messagingTemplate;
 	private final DateHoldService dateHoldService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Value("${app.s3.publicBaseUrl}")
 	private String publicBaseUrl;
@@ -109,7 +114,7 @@ public class ReservationServiceImpl implements ReservationService {
 			throw new ConflictException("이미 다른 사용자가 선택 중인 날짜입니다.");
 		}
 
-		Reservation reservation = new Reservation();
+		final Reservation reservation = new Reservation();
 		reservation.setStay(stay);
 		reservation.setMember(member);
 		reservation.setResrvStatus(ResrvStatus.PENDING);
@@ -119,13 +124,30 @@ public class ReservationServiceImpl implements ReservationService {
 		reservation.setPendingExpiresAt(expiresAt);
 		reservation.setHoldToken(holdToken);
 
-		try {
-			reservationRepository.save(reservation);
-			dateHoldService.setExpiryAlarm(reservation.getId(), expiresAt);
-		} catch (Exception e) {
-			dateHoldService.releaseDateHolds(stayId, dates, holdToken);
-			throw e;
-		}
+		// 메서드 내부 try/catch는 커밋 시점의 영속성 실패를 잡지 못한다.
+		// 트랜잭션 동기화를 최종 보상 경로로 둔다: 롤백 시 이번 토큰의 hold를 정리하고,
+		// 정상 커밋 후에만 같은 deadline으로 alarm을 등록한다(정상 상태의 파생 키는 커밋 뒤).
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				try {
+					dateHoldService.setExpiryAlarm(reservation.getId(), expiresAt);
+				} catch (Exception e) {
+					// 이미 커밋된 PENDING을 되돌리지 않는다. hold TTL·DB pendingExpiresAt 기반 sweeper가 최종 수렴 경로.
+					log.error("alarm 등록 실패 (sweeper 수렴에 위임): reservationId={}", reservation.getId(), e);
+				}
+			}
+
+			@Override
+			public void afterCompletion(int status) {
+				if (status == STATUS_ROLLED_BACK) {
+					dateHoldService.releaseDateHolds(stayId, dates, holdToken);
+				}
+			}
+		});
+
+		// 가능한 영속성 오류를 조기에 드러낸다(롤백 콜백이 최종 보상 경로).
+		reservationRepository.saveAndFlush(reservation);
 
 		return toCreateResponseDTO(reservation);
 	}
@@ -187,16 +209,19 @@ public class ReservationServiceImpl implements ReservationService {
 			throw new ConflictException("다른 사용자가 먼저 예약을 확정했습니다.");
 		}
 
-		dateHoldService.releaseAll(
-			reservation.getStay().getId(),
-			startDate.datesUntil(endDate).collect(Collectors.toList()),
-			reservationId,
-			reservation.getHoldToken()
-		);
+		String holdToken = reservation.getHoldToken();
 
 		reservation.setResrvStatus(ResrvStatus.RESERVED);
 		reservation.setHoldToken(null); // RESERVED 전이 시 소유 토큰 비움 (상태별 불변식)
 		reservation.setReservedAt(LocalDateTime.now());
+
+		// 정상 상태의 release는 DB 커밋 이후 실행한다 — 확정 트랜잭션이 롤백되면 hold를 유지한다
+		eventPublisher.publishEvent(new ReservationHoldReleaseEvent(
+			reservation.getStay().getId(),
+			startDate.datesUntil(endDate).toList(),
+			reservationId,
+			holdToken
+		));
 		log.info("예약이 성공적으로 확정되었습니다: reservationId={}", reservationId);
 
 		// 관리자에게 예약 확정 알림 보내기
@@ -252,7 +277,8 @@ public class ReservationServiceImpl implements ReservationService {
 	@Override
 	@Transactional
 	public void cancelReservation(Long memberId, Long reservationId) {
-		Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(
+		// 예약 행을 잠가 confirm·만료 회수와 수명주기 전이를 직렬화한 뒤 최신 상태로 판정한다
+		Reservation reservation = reservationRepository.findByIdForUpdate(reservationId).orElseThrow(
 			() -> new EntityNotFoundException("해당 예약을 찾을 수 없습니다.")
 		);
 
@@ -263,10 +289,10 @@ public class ReservationServiceImpl implements ReservationService {
 			return;
 		}
 
+		String holdToken = reservation.getHoldToken();
 		List<LocalDate> dates = reservation.getStartDate()
 			.datesUntil(reservation.getEndDate())
-			.collect(Collectors.toList());
-		dateHoldService.releaseAll(reservation.getStay().getId(), dates, reservationId, reservation.getHoldToken());
+			.toList();
 
 		reservation.setResrvStatus(ResrvStatus.CANCELLED); // 예약 취소 상태로
 		reservation.setVisitStatus(null); // 방문 상태 null로
@@ -274,6 +300,10 @@ public class ReservationServiceImpl implements ReservationService {
 		reservationRepository.save(reservation);
 
 		reservationDayRepository.deleteByReservationId(reservationId); // ReservationDay 날짜 점유 해제
+
+		// 정상 상태의 release는 DB 커밋 이후 실행 (PENDING이면 토큰으로 hold·alarm 정리, RESERVED면 no-op)
+		eventPublisher.publishEvent(new ReservationHoldReleaseEvent(
+			reservation.getStay().getId(), dates, reservationId, holdToken));
 	}
 
 	@Override

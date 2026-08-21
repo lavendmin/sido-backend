@@ -1,18 +1,13 @@
 package com.sido.backend.reservation.scheduler;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import com.sido.backend.reservation.entity.Reservation;
 import com.sido.backend.reservation.entity.ResrvStatus;
 import com.sido.backend.reservation.repository.ReservationRepository;
-import com.sido.backend.reservation.service.DateHoldService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
  * Keyspace Notification은 at-most-once라 이벤트 발생 순간 서버가 죽어 있으면 유실된다.
  * 유실된 만료 이벤트를 pendingExpiresAt 기준으로 회수하는 2차 안전망.
  * (1차: PendingExpiryListener — 즉시성 담당 / 2차: 본 스케줄러 — 최종 일관성 담당)
+ * <p>
+ * 후보 ID 조회와 항목별 잠금·상태 재검증을 분리해, 한 트랜잭션이 모든 만료 건을 오래 붙잡지 않게 한다.
  */
 @Slf4j
 @Component
@@ -28,31 +25,23 @@ import lombok.extern.slf4j.Slf4j;
 public class PendingExpirySweeper {
 
 	private final ReservationRepository reservationRepository;
-	private final DateHoldService dateHoldService;
+	private final PendingExpiryProcessor pendingExpiryProcessor;
 
 	@Scheduled(fixedDelay = 10 * 60 * 1000) // 10분 주기
-	@Transactional
 	public void sweepExpiredPendings() {
-		List<Reservation> expired = reservationRepository
-			.findByResrvStatusAndPendingExpiresAtBefore(ResrvStatus.PENDING, LocalDateTime.now());
+		List<Long> expiredIds = reservationRepository
+			.findIdsByResrvStatusAndPendingExpiresAtBefore(ResrvStatus.PENDING, LocalDateTime.now());
 
-		for (Reservation reservation : expired) {
-			String holdToken = reservation.getHoldToken();
-
-			reservation.setResrvStatus(ResrvStatus.CANCELLED);
-			reservation.setHoldToken(null); // CANCELLED 전이 시 소유 토큰 비움 (상태별 불변식)
-
-			// hold 키는 TTL로 이미 소멸됐을 가능성이 높지만 이 예약의 토큰과 일치하는 키만 best-effort로 삭제 시도
-			if (reservation.getStay() != null) {
-				List<LocalDate> dates = reservation.getStartDate()
-					.datesUntil(reservation.getEndDate())
-					.collect(Collectors.toList());
-				dateHoldService.releaseDateHolds(reservation.getStay().getId(), dates, holdToken);
+		for (Long reservationId : expiredIds) {
+			try {
+				pendingExpiryProcessor.expireIfStillPending(reservationId); // 항목별 새 트랜잭션 + 행 잠금 재검증
+			} catch (Exception e) {
+				log.error("만료 PENDING 회수 실패: reservationId={}", reservationId, e);
 			}
 		}
 
-		if (!expired.isEmpty()) {
-			log.info("만료된 PENDING 회수 처리 (Notification 유실 대비): {}건", expired.size());
+		if (!expiredIds.isEmpty()) {
+			log.info("만료된 PENDING 회수 처리 (Notification 유실 대비): {}건", expiredIds.size());
 		}
 	}
 }

@@ -17,8 +17,11 @@ import com.sido.backend.reservation.entity.VisitStatus;
 import jakarta.persistence.LockModeType;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-	// PendingExpirySweeper용 — Keyspace Notification 유실 시 만료된 PENDING 회수
-	List<Reservation> findByResrvStatusAndPendingExpiresAtBefore(ResrvStatus resrvStatus, LocalDateTime now);
+	// PendingExpirySweeper용 — Keyspace Notification 유실 시 만료된 PENDING 후보 ID만 조회.
+	// 엔티티가 아닌 ID만 읽어, 항목별 잠금·상태 재검증은 별도 트랜잭션(PendingExpiryProcessor)에서 수행한다.
+	@Query("SELECT r.id FROM Reservation r WHERE r.resrvStatus = :status AND r.pendingExpiresAt < :now")
+	List<Long> findIdsByResrvStatusAndPendingExpiresAtBefore(
+		@Param("status") ResrvStatus status, @Param("now") LocalDateTime now);
 
 	// 수명주기 전이(confirm·cancel·만료 회수) 직렬화용 — 같은 예약 행을 PESSIMISTIC_WRITE로 잠근 뒤
 	// 최신 상태·소유자·pendingExpiresAt을 재검증한다. 가용일 행 잠금과 역할이 다르다(이쪽은 상태 전이 보호).
