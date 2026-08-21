@@ -3,8 +3,10 @@ package com.sido.backend.reservation.repository;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -12,9 +14,17 @@ import com.sido.backend.reservation.entity.Reservation;
 import com.sido.backend.reservation.entity.ResrvStatus;
 import com.sido.backend.reservation.entity.VisitStatus;
 
+import jakarta.persistence.LockModeType;
+
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 	// PendingExpirySweeper용 — Keyspace Notification 유실 시 만료된 PENDING 회수
 	List<Reservation> findByResrvStatusAndPendingExpiresAtBefore(ResrvStatus resrvStatus, LocalDateTime now);
+
+	// 수명주기 전이(confirm·cancel·만료 회수) 직렬화용 — 같은 예약 행을 PESSIMISTIC_WRITE로 잠근 뒤
+	// 최신 상태·소유자·pendingExpiresAt을 재검증한다. 가용일 행 잠금과 역할이 다르다(이쪽은 상태 전이 보호).
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT r FROM Reservation r WHERE r.id = :id")
+	Optional<Reservation> findByIdForUpdate(@Param("id") Long id);
 
 	@Query("""
 		select
