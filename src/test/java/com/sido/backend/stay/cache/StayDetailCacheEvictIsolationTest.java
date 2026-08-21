@@ -85,8 +85,8 @@ class StayDetailCacheEvictIsolationTest {
 	}
 
 	@Test
-	@DisplayName("evict 예외 격리: Redis evict 실패해도 DB 커밋·API 성공 유지, ERROR 로그 기록")
-	void evict예외_격리_DB커밋_API성공_로그기록() {
+	@DisplayName("evict 예외 격리: Redis evict 실패해도 DB 커밋·서비스 호출 정상 반환 유지, ERROR 로그 기록")
+	void evict예외_격리_DB커밋_서비스정상반환_로그기록() {
 		Logger listenerLogger = (Logger) LoggerFactory.getLogger(StayDetailCacheEvictListener.class);
 		ListAppender<ILoggingEvent> appender = new ListAppender<>();
 		appender.start();
