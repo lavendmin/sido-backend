@@ -23,6 +23,7 @@ export const options = {
     },
   },
   thresholds: {
+    checks: ['rate==1'],                       // 모든 check 통과 — 409 안내 문구가 깨져도 실패로 판정 (건수 threshold만으로는 못 잡음)
     http_req_failed: ['rate<0.01'],           // 5xx·타임아웃 없어야 함
     reservation_created: [`count==1`],         // 성공은 정확히 1건
     hold_blocked: [`count==${VUS - 1}`],       // 나머지는 전부 Redis 차단
