@@ -45,7 +45,7 @@ public class StayDetailCacheService {
 		return toResponseDetailDTO(stay);
 	}
 
-	// 숙소 수정·삭제 시 호출 — 낡은 상세 정보가 TTL 만료 전까지 서빙되는 것을 막는 주 경로
+	// 숙소 수정·삭제 커밋 이후 StayDetailCacheEvictListener 가 호출 — 낡은 상세 정보가 TTL 만료 전까지 서빙되는 것을 막는 주 경로
 	@CacheEvict(value = "stay", key = "#stayId")
 	public void evictDetail(Long stayId) {
 	}
