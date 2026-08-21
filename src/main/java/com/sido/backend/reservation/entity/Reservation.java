@@ -26,9 +26,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @Check(constraints = """
-	    (resrvStatus = 'PENDING' AND isFarm IS NULL AND visitStatus IS NULL)
-	OR (resrvStatus = 'RESERVED' AND isFarm IS NOT NULL AND visitStatus IS NOT NULL)
-	OR (resrvStatus = 'CANCELLED' AND visitStatus IS NULL)
+	    (resrvStatus = 'PENDING' AND isFarm IS NULL AND visitStatus IS NULL AND holdToken IS NOT NULL)
+	OR (resrvStatus = 'RESERVED' AND isFarm IS NOT NULL AND visitStatus IS NOT NULL AND holdToken IS NULL)
+	OR (resrvStatus = 'CANCELLED' AND visitStatus IS NULL AND holdToken IS NULL)
 	""")
 public class Reservation extends BaseEntity {
 	@Id
@@ -58,6 +58,9 @@ public class Reservation extends BaseEntity {
 
 	@Column
 	private LocalDateTime pendingExpiresAt; // PENDING 만료 시각 (createReservation 시 now + 10분)
+
+	@Column // 생성 요청별 고유 hold 토큰 (Redis 날짜 선점 소유권). PENDING에서만 non-null
+	private String holdToken;
 
 	@ManyToOne
 	@JoinColumn(name = "stay", foreignKey = @ForeignKey(

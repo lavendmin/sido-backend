@@ -44,17 +44,20 @@ public class PendingExpiryListener implements MessageListener {
 					return;
 				}
 
+				String holdToken = reservation.getHoldToken();
+
 				reservation.setResrvStatus(ResrvStatus.CANCELLED);
+				reservation.setHoldToken(null); // CANCELLED 전이 시 소유 토큰 비움 (상태별 불변식)
 				reservationRepository.save(reservation);
 				log.info("PENDING 만료로 예약 취소 처리: reservationId={}", reservationId);
 
-				// hold 키도 만료됐겠지만 best-effort로 삭제 시도 (member가 탈퇴로 null이면 TTL 소멸에 맡김)
-				if (reservation.getStay() != null && reservation.getMember() != null) {
+				// hold 키도 만료됐겠지만 이 예약의 토큰과 일치하는 키만 best-effort로 삭제 시도
+				if (reservation.getStay() != null) {
 					Long stayId = reservation.getStay().getId();
 					List<LocalDate> dates = reservation.getStartDate()
 						.datesUntil(reservation.getEndDate())
 						.collect(Collectors.toList());
-					dateHoldService.releaseDateHolds(stayId, dates, reservation.getMember().getId());
+					dateHoldService.releaseDateHolds(stayId, dates, holdToken);
 				}
 			});
 

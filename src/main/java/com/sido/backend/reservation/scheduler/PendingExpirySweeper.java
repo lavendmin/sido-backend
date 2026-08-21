@@ -37,15 +37,17 @@ public class PendingExpirySweeper {
 			.findByResrvStatusAndPendingExpiresAtBefore(ResrvStatus.PENDING, LocalDateTime.now());
 
 		for (Reservation reservation : expired) {
-			reservation.setResrvStatus(ResrvStatus.CANCELLED);
+			String holdToken = reservation.getHoldToken();
 
-			// hold 키는 TTL로 이미 소멸됐을 가능성이 높지만 best-effort로 삭제 시도
-			if (reservation.getStay() != null && reservation.getMember() != null) {
+			reservation.setResrvStatus(ResrvStatus.CANCELLED);
+			reservation.setHoldToken(null); // CANCELLED 전이 시 소유 토큰 비움 (상태별 불변식)
+
+			// hold 키는 TTL로 이미 소멸됐을 가능성이 높지만 이 예약의 토큰과 일치하는 키만 best-effort로 삭제 시도
+			if (reservation.getStay() != null) {
 				List<LocalDate> dates = reservation.getStartDate()
 					.datesUntil(reservation.getEndDate())
 					.collect(Collectors.toList());
-				dateHoldService.releaseDateHolds(
-					reservation.getStay().getId(), dates, reservation.getMember().getId());
+				dateHoldService.releaseDateHolds(reservation.getStay().getId(), dates, holdToken);
 			}
 		}
 

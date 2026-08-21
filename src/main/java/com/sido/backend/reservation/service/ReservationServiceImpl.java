@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -99,7 +100,11 @@ public class ReservationServiceImpl implements ReservationService {
 
 		List<LocalDate> dates = startDate.datesUntil(endDate).collect(Collectors.toList());
 
-		boolean held = dateHoldService.tryHoldAll(stayId, dates, memberId);
+		// 생성 요청별 고유 토큰과 단일 만료 deadline을 한 번 정해 hold·DB·alarm이 같은 기준을 쓰게 한다
+		String holdToken = UUID.randomUUID().toString();
+		LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(DateHoldService.HOLD_MINUTES);
+
+		boolean held = dateHoldService.tryHoldAll(stayId, dates, holdToken, expiresAt);
 		if (!held) {
 			throw new ConflictException("이미 다른 사용자가 선택 중인 날짜입니다.");
 		}
@@ -111,13 +116,14 @@ public class ReservationServiceImpl implements ReservationService {
 		reservation.setStartDate(startDate);
 		reservation.setEndDate(endDate);
 		reservation.setPersonCnt(personCnt);
-		reservation.setPendingExpiresAt(LocalDateTime.now().plusMinutes(DateHoldService.HOLD_MINUTES));
+		reservation.setPendingExpiresAt(expiresAt);
+		reservation.setHoldToken(holdToken);
 
 		try {
 			reservationRepository.save(reservation);
-			dateHoldService.setExpiryAlarm(reservation.getId());
+			dateHoldService.setExpiryAlarm(reservation.getId(), expiresAt);
 		} catch (Exception e) {
-			dateHoldService.releaseDateHolds(stayId, dates, memberId);
+			dateHoldService.releaseDateHolds(stayId, dates, holdToken);
 			throw e;
 		}
 
@@ -194,10 +200,11 @@ public class ReservationServiceImpl implements ReservationService {
 			reservation.getStay().getId(),
 			newStart.datesUntil(newEnd).collect(Collectors.toList()),
 			reservationId,
-			memberId
+			reservation.getHoldToken()
 		);
 
 		reservation.setResrvStatus(ResrvStatus.RESERVED);
+		reservation.setHoldToken(null); // RESERVED 전이 시 소유 토큰 비움 (상태별 불변식)
 		reservation.setReservedAt(LocalDateTime.now());
 		log.info("예약이 성공적으로 확정되었습니다: reservationId={}", reservationId);
 
@@ -268,10 +275,11 @@ public class ReservationServiceImpl implements ReservationService {
 		List<LocalDate> dates = reservation.getStartDate()
 			.datesUntil(reservation.getEndDate())
 			.collect(Collectors.toList());
-		dateHoldService.releaseAll(reservation.getStay().getId(), dates, reservationId, memberId);
+		dateHoldService.releaseAll(reservation.getStay().getId(), dates, reservationId, reservation.getHoldToken());
 
 		reservation.setResrvStatus(ResrvStatus.CANCELLED); // 예약 취소 상태로
 		reservation.setVisitStatus(null); // 방문 상태 null로
+		reservation.setHoldToken(null); // CANCELLED 전이 시 소유 토큰 비움 (상태별 불변식)
 		reservationRepository.save(reservation);
 
 		reservationDayRepository.deleteByReservationId(reservationId); // ReservationDay 날짜 점유 해제
