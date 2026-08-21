@@ -23,7 +23,8 @@ import lombok.extern.slf4j.Slf4j;
  * - evict 누락의 상한선은 캐시 TTL 5분이 담당한다.
  *
  * 남는 한계: 커밋 전에 시작한 cache miss 조회가 AFTER_COMMIT evict 이후 이전 값을 늦게 put 하면
- * 최대 TTL 5분까지 낡은 값이 남을 수 있다. 이 잔여 경합은 이번 범위에서 닫지 않고 한계로 둔다.
+ * 그 put 시점부터 TTL 5분까지 낡은 값이 남을 수 있다(커밋 시점 기준 5분 상한이 아님).
+ * 이 잔여 경합은 이번 범위에서 닫지 않고 한계로 둔다.
  */
 @Slf4j
 @Component

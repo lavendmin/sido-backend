@@ -51,10 +51,15 @@ export const options = {
   },
   thresholds: {
     // 목적은 "측정"이므로 p(90) 절대값은 단언하지 않는다(환경차로 오탐).
-    // 서버 오류(5xx·타임아웃)만 1% 미만을 단언한다.
+    // 서버 오류(5xx·타임아웃)는 1% 미만, 상태코드 check(200)는 전건 통과를 단언한다 —
+    // 3xx 등 비정상 응답이 측정 성공으로 섞이면 실행 자체를 실패로 만든다.
     http_req_failed: ['rate<0.01'],
+    checks: ['rate==1'],
   },
 };
+
+// 200만 정상 응답으로 취급 — 그 외(3xx 포함)는 전부 http_req_failed로 집계
+http.setResponseCallback(http.expectedStatuses(200));
 
 // 대상 엔드포인트의 응답시간만 별도 Trend로 집계 (ms 단위)
 const detailDuration = new Trend('stay_detail_duration', true);
