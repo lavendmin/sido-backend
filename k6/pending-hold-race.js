@@ -23,6 +23,7 @@ export const options = {
     },
   },
   thresholds: {
+    checks: ['rate==1'],                       // 모든 check 통과 — 409 안내 문구가 깨져도 실패로 판정 (건수 threshold만으로는 못 잡음)
     http_req_failed: ['rate<0.01'],           // 5xx·타임아웃 없어야 함
     reservation_created: [`count==1`],         // 성공은 정확히 1건
     hold_blocked: [`count==${VUS - 1}`],       // 나머지는 전부 Redis 차단
@@ -70,14 +71,15 @@ export default function (data) {
     }
   );
 
+  // 201/409는 상호 배타 — 해당 결과의 check만 수행해야 checks 지표가 "50% 실패"처럼 보이지 않는다.
+  // 건수 판정은 위 thresholds(reservation_created/hold_blocked)가 담당.
   if (res.status === 201) {
     created.add(1);
+    check(res, { 'PENDING 생성 성공 (201)': () => true });
   } else if (res.status === 409) {
     blocked.add(1);
+    check(res, { 'Redis 선점 차단 (409, 안내 문구 포함)': (r) => r.body.includes('선택 중인 날짜') });
+  } else {
+    check(res, { [`예상 밖 상태 코드: ${res.status}`]: () => false });
   }
-
-  check(res, {
-    'PENDING 생성 성공 (201)':      (r) => r.status === 201,
-    'Redis 선점 차단 (409)':        (r) => r.status === 409 && r.body.includes('선택 중인 날짜'),
-  });
 }
