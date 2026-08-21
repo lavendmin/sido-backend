@@ -41,8 +41,10 @@ import com.sido.backend.stay.repository.StayRepository;
 /**
  * T2-2 검증 — 같은 예약의 수명주기 전이를 예약 행 잠금으로 직렬화한다.
  * <p>
- * 어느 경로가 먼저 잠금을 얻든 나중 경로는 최신 상태를 재검증하므로, 상태와 점유(ReservationDay) 불변식이
- * 깨지지 않는다. 정상 release가 커밋에 묶여 있음을 롤백 케이스로도 단언한다. 실 MySQL·Redis 필요.
+ * 증명 범위를 정확히: confirm↔만료 회수 두 테스트는 **선후행 순서별 상태 전이 검증**(순차 실행 — 먼저 전이한
+ * 쪽이 커밋된 뒤 나중 경로가 최신 상태를 재검증해 no-op/거부하는지)이고, 실제 동시 실행 경합은
+ * **confirm↔cancel 2-thread 테스트 한 건**이다. 대규모 동시 트래픽 검증이 아니다.
+ * 정상 release가 커밋에 묶여 있음을 롤백 케이스로도 단언한다. 실 MySQL·Redis 필요.
  */
 @SpringBootTest
 class ReservationLifecycleConcurrencyTest {
@@ -137,7 +139,7 @@ class ReservationLifecycleConcurrencyTest {
 	// ─────────────────────────── tests ───────────────────────────
 
 	@Test
-	@DisplayName("confirm이 먼저 확정 → 이후 만료 회수는 최신 상태(RESERVED)를 보고 no-op")
+	@DisplayName("[선후행 전이] confirm 선행 → 이후 만료 회수는 최신 상태(RESERVED)를 보고 no-op")
 	void confirmThenExpiry_expiryNoops_staysReserved() {
 		Long rid = createPending(); // deadline 미래
 		reservationService.confirmReservation(memberId, rid, new ReservationConfirmRequestDTO(2, false));
@@ -149,7 +151,7 @@ class ReservationLifecycleConcurrencyTest {
 	}
 
 	@Test
-	@DisplayName("만료 회수가 먼저 취소 → 이후 confirm은 최신 상태(CANCELLED)를 보고 거부, 점유 0")
+	@DisplayName("[선후행 전이] 만료 회수 선행 → 이후 confirm은 최신 상태(CANCELLED)를 보고 거부, 점유 0")
 	void expiryThenConfirm_confirmRejected_noOccupancy() {
 		Long rid = createPending();
 		Reservation r = reservationRepository.findById(rid).orElseThrow();
@@ -167,7 +169,7 @@ class ReservationLifecycleConcurrencyTest {
 	}
 
 	@Test
-	@DisplayName("confirm 대 cancel 동시 실행 — 행 잠금으로 직렬화, 최종 CANCELLED·점유 0")
+	@DisplayName("[2-thread 경합] confirm 대 cancel 동시 실행 — 행 잠금으로 직렬화, 최종 CANCELLED·점유 0")
 	void confirmVsCancel_concurrent_finalCancelledNoOccupancy() throws InterruptedException {
 		Long rid = createPending();
 		CountDownLatch gate = new CountDownLatch(1);
@@ -197,10 +199,22 @@ class ReservationLifecycleConcurrencyTest {
 		confirmThread.join(20_000);
 		cancelThread.join(20_000);
 
+		// 두 스레드가 제한시간 안에 실제로 종료됐는지 (락 대기 교착·행 없음이면 여기서 잡힌다)
+		assertThat(confirmThread.isAlive()).as("confirm 스레드가 제한시간 안에 종료돼야 한다").isFalse();
+		assertThat(cancelThread.isAlive()).as("cancel 스레드가 제한시간 안에 종료돼야 한다").isFalse();
+
 		// 두 경로 어느 순서로 직렬화돼도 cancel은 항상 취소로 수렴 → 최종 CANCELLED, 점유 0
 		assertThat(statusOf(rid)).isEqualTo(ResrvStatus.CANCELLED);
 		assertThat(reservationDayRepository.findAllReserved(stayId)).isEmpty();
 		assertThat(cancelErr.get()).as("cancel은 성공해야 한다").isNull();
+		// confirm은 (a) cancel보다 먼저 잠금을 얻어 성공(이후 cancel이 RESERVED를 취소) 또는
+		// (b) cancel 후 최신 상태 CANCELLED를 보고 ConflictException으로 거부 — 그 외 예외는 장애다
+		Throwable confirmOutcome = confirmErr.get();
+		if (confirmOutcome != null) {
+			assertThat(confirmOutcome)
+				.as("confirm 실패는 예상된 상태 충돌(ConflictException)이어야 한다: " + confirmOutcome)
+				.isInstanceOf(com.sido.backend.common.exception.ConflictException.class);
+		}
 	}
 
 	@Test
