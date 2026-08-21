@@ -37,7 +37,7 @@ public class DateHoldService {
 		for (LocalDate date : dates) {
 			String key = buildHoldKey(stayId, date);
 			Boolean success = redisTemplate.opsForValue()
-				.setIfAbsent(key, holdToken, remainingSeconds(expiresAt), TimeUnit.SECONDS);
+				.setIfAbsent(key, holdToken, remainingMillis(expiresAt), TimeUnit.MILLISECONDS);
 
 			if (!Boolean.TRUE.equals(success)) {
 				releaseDateHolds(stayId, acquired, holdToken);
@@ -52,7 +52,7 @@ public class DateHoldService {
 	// 날짜 hold·DB pendingExpiresAt과 동일한 expiresAt deadline을 사용한다.
 	public void setExpiryAlarm(Long reservationId, LocalDateTime expiresAt) {
 		redisTemplate.opsForValue()
-			.set(buildAlarmKey(reservationId), "1", remainingSeconds(expiresAt), TimeUnit.SECONDS);
+			.set(buildAlarmKey(reservationId), "1", remainingMillis(expiresAt), TimeUnit.MILLISECONDS);
 	}
 
 	// confirm 완료 / 취소 시 호출 — 날짜 선점 키 + 알람 키 모두 해제
@@ -74,9 +74,15 @@ public class DateHoldService {
 		}
 	}
 
-	private long remainingSeconds(LocalDateTime expiresAt) {
-		long seconds = Duration.between(LocalDateTime.now(), expiresAt).getSeconds();
-		return Math.max(1, seconds); // 이미 지난 deadline도 최소 1초를 줘 SETNX가 TTL 없는 영구 키를 만들지 않게 한다
+	// Redis 만료가 DB deadline(pendingExpiresAt)보다 절대 먼저 오지 않도록 밀리초 올림으로 계산한다.
+	// 초 단위 내림(getSeconds)이면 hold·alarm이 deadline보다 최대 1초 먼저 만료될 수 있고,
+	// 그 창에서 hold가 풀린 날짜를 다른 요청이 선점하면 아직 deadline 전이라 확정 가능한 기존 PENDING과
+	// 이중 PENDING이 공존한다. 올림이면 Redis 만료는 deadline과 같거나 그 뒤 — hold가 풀린 시점에는
+	// 기존 PENDING이 이미 만료돼 confirm이 410으로 거부되므로 정합성이 유지된다.
+	private long remainingMillis(LocalDateTime expiresAt) {
+		long nanos = Duration.between(LocalDateTime.now(), expiresAt).toNanos();
+		long millisCeil = Math.floorDiv(nanos + 999_999, 1_000_000); // 올림
+		return Math.max(1, millisCeil); // 이미 지난 deadline도 최소 1ms를 줘 SETNX가 TTL 없는 영구 키를 만들지 않게 한다
 	}
 
 	private String buildHoldKey(Long stayId, LocalDate date) {

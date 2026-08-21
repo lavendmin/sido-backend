@@ -33,15 +33,18 @@ import com.sido.backend.stay.repository.StayImageRepository;
 import com.sido.backend.stay.repository.StayRepository;
 
 /**
- * 결정 D 검증 — create 트랜잭션 커밋 실패 시 보상.
+ * 결정 D 검증 — create 영속화 실패에 따른 트랜잭션 롤백 보상.
  * <p>
- * hold 획득 이후 커밋(여기서는 saveAndFlush)이 실패하면, 메서드 내부 try/catch가 아닌 트랜잭션 롤백 콜백이
- * 이번 요청의 토큰으로 잡은 hold를 정리하고 alarm은 등록하지 않아야 한다. saveAndFlush를 강제로 실패시켜 재현한다.
+ * 증명 범위를 정확히: 이 테스트가 재현하는 것은 {@code saveAndFlush}의 **영속화 시점 예외 → 롤백**이며,
+ * 그때 {@code afterCompletion(STATUS_ROLLED_BACK)} 콜백이 이번 토큰의 hold를 정리하고 alarm을 만들지
+ * 않음을 검증한다. 서비스 반환 이후 트랜잭션 매니저의 **실제 commit 단계 실패**를 직접 재현한 것은 아니다 —
+ * 같은 afterCompletion(ROLLED_BACK) 경로로 처리되는 구조이나, 그 부분의 근거는 구조 논증까지다.
  */
 @SpringBootTest
 class ReservationCreateCompensationTest {
 
 	private static final String HOLD_PREFIX = "reservation:hold:";
+	private static final String ALARM_PREFIX = "reservation:expire:";
 
 	@Autowired private ReservationService reservationService;
 	@Autowired private StayRepository stayRepository;
@@ -102,11 +105,13 @@ class ReservationCreateCompensationTest {
 	}
 
 	@Test
-	@DisplayName("create 커밋 실패 → 이번 토큰의 hold 정리, alarm 미생성")
-	void createCommitFailure_releasesHold_noAlarm() {
-		// 커밋 시점 실패 모사: 영속화 시도에서 예외
+	@DisplayName("create 영속화 실패(saveAndFlush 강제 예외) → 롤백 보상: 이번 토큰의 hold 정리, alarm 미생성")
+	void createPersistFailure_rollbackCompensation_releasesHold_noAlarm() {
+		// 영속화 시점 실패 주입 (실제 commit 단계 실패의 직접 재현은 아님 — 클래스 javadoc 참조)
 		given(reservationRepository.saveAndFlush(any(Reservation.class)))
-			.willThrow(new DataIntegrityViolationException("forced commit failure"));
+			.willThrow(new DataIntegrityViolationException("forced persist failure"));
+
+		java.util.Set<String> alarmKeysBefore = redisTemplate.keys(ALARM_PREFIX + "*");
 
 		assertThatThrownBy(() -> reservationService.createReservation(memberId, stayId,
 			new ReservationCreateRequestDTO(start, end, 2)))
@@ -115,10 +120,14 @@ class ReservationCreateCompensationTest {
 		// 롤백 콜백이 이번 요청 토큰으로 hold를 정리했어야 한다
 		for (LocalDate d : nights) {
 			assertThat(redisTemplate.hasKey(HOLD_PREFIX + stayId + ":" + d))
-				.as("커밋 실패 시 이번 요청의 hold가 남아있으면 안 된다")
+				.as("롤백 시 이번 요청의 hold가 남아있으면 안 된다")
 				.isFalse();
 		}
-		// alarm은 afterCommit에서만 등록되므로 롤백 시 생성되지 않는다 (reservationId도 없음)
+		// alarm 직접 단언: afterCommit이 실행되지 않았으므로 새 alarm 키가 하나도 생기지 않아야 한다
+		java.util.Set<String> alarmKeysAfter = redisTemplate.keys(ALARM_PREFIX + "*");
+		assertThat(alarmKeysAfter)
+			.as("롤백 시 alarm 키가 새로 생성되면 안 된다")
+			.isSubsetOf(alarmKeysBefore == null ? java.util.Set.of() : alarmKeysBefore);
 		then(reservationRepository).should().saveAndFlush(any(Reservation.class));
 	}
 }
