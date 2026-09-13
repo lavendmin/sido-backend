@@ -1,0 +1,11 @@
+# A(현 develop) 시나리오2 실행 중 발생한 데드락 (앱 로그 발췌)
+# 쿼리: select ... from ReservationDay ... where stay=? and date>=? and date<? for update
+
+2026-09-13T17:37:00.061+09:00  WARN 967832 --- [backend] [nio-8085-exec-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 1213, SQLState: 40001
+2026-09-13T17:37:00.061+09:00  WARN 967832 --- [backend] [io-8085-exec-10] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 1213, SQLState: 40001
+2026-09-13T17:37:00.061+09:00  WARN 967832 --- [backend] [nio-8085-exec-7] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 1213, SQLState: 40001
+2026-09-13T17:37:00.062+09:00 ERROR 967832 --- [backend] [nio-8085-exec-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : Deadlock found when trying to get lock; try restarting transaction
+2026-09-13T17:37:00.061+09:00  WARN 967832 --- [backend] [nio-8085-exec-2] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 1213, SQLState: 40001
+2026-09-13T17:37:00.061+09:00  WARN 967832 --- [backend] [nio-8085-exec-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 1213, SQLState: 40001
+
+총 'Deadlock found' 로그 라인 수(A 전체 실행): 516
