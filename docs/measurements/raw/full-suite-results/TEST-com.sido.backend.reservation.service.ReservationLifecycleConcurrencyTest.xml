@@ -1,0 +1,2029 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.reservation.service.ReservationLifecycleConcurrencyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-13T10:00:12.194Z" hostname="BOOK-38TIIHH6ML" time="0.711">
+  <properties/>
+  <testcase name="[2-thread 경합] confirm 대 cancel 동시 실행 — 행 잠금으로 직렬화, 최종 CANCELLED·점유 0" classname="com.sido.backend.reservation.service.ReservationLifecycleConcurrencyTest" time="0.205"/>
+  <testcase name="[선후행 전이] confirm 선행 → 이후 만료 회수는 최신 상태(RESERVED)를 보고 no-op" classname="com.sido.backend.reservation.service.ReservationLifecycleConcurrencyTest" time="0.161"/>
+  <testcase name="[선후행 전이] 만료 회수 선행 → 이후 confirm은 최신 상태(CANCELLED)를 보고 거부, 점유 0" classname="com.sido.backend.reservation.service.ReservationLifecycleConcurrencyTest" time="0.16"/>
+  <testcase name="confirm 롤백 → hold·alarm 유지, 점유·상태 변경 없음(PENDING)" classname="com.sido.backend.reservation.service.ReservationLifecycleConcurrencyTest" time="0.18"/>
+  <system-out><![CDATA[2026-09-13T19:00:12.187+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.reservation.service.ReservationLifecycleConcurrencyTest]: ReservationLifecycleConcurrencyTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T19:00:12.189+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.reservation.service.ReservationLifecycleConcurrencyTest
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayImage
+        (s3Key, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        count(sad1_0.id) 
+    from
+        StayAvailDate sad1_0 
+    where
+        sad1_0.stay=? 
+        and sad1_0.availableDate>=? 
+        and sad1_0.availableDate<? 
+        and not exists(select
+            1 
+        from
+            ReservationDay rd1_0 
+        where
+            rd1_0.stay=sad1_0.stay 
+            and rd1_0.date=sad1_0.availableDate)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        StayImage i1_0 
+    where
+        i1_0.stay=?
+2026-09-13T19:00:12.289+09:00  INFO 949696 --- [backend] [        confirm] c.s.b.r.service.ReservationServiceImpl   : 예약 확정 프로세스 시작: reservationId=28
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        r1_0.member,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        r1_0.stay,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    where
+        r1_0.id=? for update
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        r1_0.member,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        r1_0.stay,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    where
+        r1_0.id=? for update
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    left join
+        StayImage i1_0 
+            on s1_0.id=i1_0.stay 
+    where
+        s1_0.id=? for update
+Hibernate: 
+    select
+        sad1_0.id,
+        sad1_0.availableDate,
+        sad1_0.stay 
+    from
+        StayAvailDate sad1_0 
+    where
+        sad1_0.stay=? 
+        and sad1_0.availableDate>=? 
+        and sad1_0.availableDate<? 
+    order by
+        sad1_0.availableDate for update
+Hibernate: 
+    select
+        rd1_0.id,
+        rd1_0.date,
+        rd1_0.reservation,
+        rd1_0.stay 
+    from
+        ReservationDay rd1_0 
+    where
+        rd1_0.stay=? 
+        and rd1_0.date>=? 
+        and rd1_0.date<? for update
+Hibernate: 
+    insert 
+    into
+        ReservationDay
+        (date, reservation, stay) 
+    values
+        (?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        ReservationDay
+        (date, reservation, stay) 
+    values
+        (?, ?, ?)
+2026-09-13T19:00:12.329+09:00  INFO 949696 --- [backend] [        confirm] c.s.b.r.service.ReservationServiceImpl   : 예약이 성공적으로 확정되었습니다: reservationId=28
+2026-09-13T19:00:12.329+09:00  INFO 949696 --- [backend] [        confirm] c.s.b.r.service.ReservationServiceImpl   : 관리자 알림 전송 로직 시작
+2026-09-13T19:00:12.329+09:00  INFO 949696 --- [backend] [        confirm] c.s.b.r.service.ReservationServiceImpl   : Stay 객체 확인: stayId=54
+2026-09-13T19:00:12.329+09:00  WARN 949696 --- [backend] [        confirm] c.s.b.r.service.ReservationServiceImpl   : HostMember(관리자)가 존재하지 않습니다. stayId=54
+2026-09-13T19:00:12.331+09:00  WARN 949696 --- [backend] [        confirm] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [updatedAt] property of the [com.sido.backend.reservation.entity.Reservation] entity was modified, but it won't be updated because the property is immutable.
+Hibernate: 
+    update
+        Reservation 
+    set
+        endDate=?,
+        holdToken=?,
+        isFarm=?,
+        member=?,
+        pendingExpiresAt=?,
+        personCnt=?,
+        reservedAt=?,
+        resrvStatus=?,
+        startDate=?,
+        stay=?,
+        visitStatus=? 
+    where
+        id=?
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+2026-09-13T19:00:12.349+09:00  WARN 949696 --- [backend] [         cancel] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [updatedAt] property of the [com.sido.backend.reservation.entity.Reservation] entity was modified, but it won't be updated because the property is immutable.
+Hibernate: 
+    update
+        Reservation 
+    set
+        endDate=?,
+        holdToken=?,
+        isFarm=?,
+        member=?,
+        pendingExpiresAt=?,
+        personCnt=?,
+        reservedAt=?,
+        resrvStatus=?,
+        startDate=?,
+        stay=?,
+        visitStatus=? 
+    where
+        id=?
+Hibernate: 
+    select
+        rd1_0.id,
+        rd1_0.date,
+        rd1_0.reservation,
+        rd1_0.stay 
+    from
+        ReservationDay rd1_0 
+    left join
+        Reservation r1_0 
+            on r1_0.id=rd1_0.reservation 
+    where
+        r1_0.id=?
+Hibernate: 
+    delete 
+    from
+        ReservationDay 
+    where
+        id=?
+Hibernate: 
+    delete 
+    from
+        ReservationDay 
+    where
+        id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        r1_0.id=?
+Hibernate: 
+    select
+        rd1_0.date 
+    from
+        ReservationDay rd1_0 
+    where
+        rd1_0.stay=? 
+    order by
+        rd1_0.date
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayImage
+        (s3Key, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        count(sad1_0.id) 
+    from
+        StayAvailDate sad1_0 
+    where
+        sad1_0.stay=? 
+        and sad1_0.availableDate>=? 
+        and sad1_0.availableDate<? 
+        and not exists(select
+            1 
+        from
+            ReservationDay rd1_0 
+        where
+            rd1_0.stay=sad1_0.stay 
+            and rd1_0.date=sad1_0.availableDate)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        StayImage i1_0 
+    where
+        i1_0.stay=?
+2026-09-13T19:00:12.484+09:00  INFO 949696 --- [backend] [    Test worker] c.s.b.r.service.ReservationServiceImpl   : 예약 확정 프로세스 시작: reservationId=29
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        r1_0.member,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        r1_0.stay,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    where
+        r1_0.id=? for update
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    left join
+        StayImage i1_0 
+            on s1_0.id=i1_0.stay 
+    where
+        s1_0.id=? for update
+Hibernate: 
+    select
+        sad1_0.id,
+        sad1_0.availableDate,
+        sad1_0.stay 
+    from
+        StayAvailDate sad1_0 
+    where
+        sad1_0.stay=? 
+        and sad1_0.availableDate>=? 
+        and sad1_0.availableDate<? 
+    order by
+        sad1_0.availableDate for update
+Hibernate: 
+    select
+        rd1_0.id,
+        rd1_0.date,
+        rd1_0.reservation,
+        rd1_0.stay 
+    from
+        ReservationDay rd1_0 
+    where
+        rd1_0.stay=? 
+        and rd1_0.date>=? 
+        and rd1_0.date<? for update
+Hibernate: 
+    insert 
+    into
+        ReservationDay
+        (date, reservation, stay) 
+    values
+        (?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        ReservationDay
+        (date, reservation, stay) 
+    values
+        (?, ?, ?)
+2026-09-13T19:00:12.508+09:00  INFO 949696 --- [backend] [    Test worker] c.s.b.r.service.ReservationServiceImpl   : 예약이 성공적으로 확정되었습니다: reservationId=29
+2026-09-13T19:00:12.508+09:00  INFO 949696 --- [backend] [    Test worker] c.s.b.r.service.ReservationServiceImpl   : 관리자 알림 전송 로직 시작
+2026-09-13T19:00:12.508+09:00  INFO 949696 --- [backend] [    Test worker] c.s.b.r.service.ReservationServiceImpl   : Stay 객체 확인: stayId=55
+2026-09-13T19:00:12.508+09:00  WARN 949696 --- [backend] [    Test worker] c.s.b.r.service.ReservationServiceImpl   : HostMember(관리자)가 존재하지 않습니다. stayId=55
+2026-09-13T19:00:12.509+09:00  WARN 949696 --- [backend] [    Test worker] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [updatedAt] property of the [com.sido.backend.reservation.entity.Reservation] entity was modified, but it won't be updated because the property is immutable.
+Hibernate: 
+    update
+        Reservation 
+    set
+        endDate=?,
+        holdToken=?,
+        isFarm=?,
+        member=?,
+        pendingExpiresAt=?,
+        personCnt=?,
+        reservedAt=?,
+        resrvStatus=?,
+        startDate=?,
+        stay=?,
+        visitStatus=? 
+    where
+        id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        r1_0.member,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        r1_0.stay,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    where
+        r1_0.id=? for update
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        r1_0.id=?
+Hibernate: 
+    select
+        rd1_0.date 
+    from
+        ReservationDay rd1_0 
+    where
+        rd1_0.stay=? 
+    order by
+        rd1_0.date
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayImage
+        (s3Key, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        count(sad1_0.id) 
+    from
+        StayAvailDate sad1_0 
+    where
+        sad1_0.stay=? 
+        and sad1_0.availableDate>=? 
+        and sad1_0.availableDate<? 
+        and not exists(select
+            1 
+        from
+            ReservationDay rd1_0 
+        where
+            rd1_0.stay=sad1_0.stay 
+            and rd1_0.date=sad1_0.availableDate)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        StayImage i1_0 
+    where
+        i1_0.stay=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        r1_0.id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    left join
+        StayImage i1_0 
+            on s1_0.id=i1_0.stay 
+    where
+        r1_0.id=?
+2026-09-13T19:00:12.657+09:00  WARN 949696 --- [backend] [    Test worker] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [updatedAt] property of the [com.sido.backend.reservation.entity.Reservation] entity was modified, but it won't be updated because the property is immutable.
+Hibernate: 
+    update
+        Reservation 
+    set
+        endDate=?,
+        holdToken=?,
+        isFarm=?,
+        member=?,
+        pendingExpiresAt=?,
+        personCnt=?,
+        reservedAt=?,
+        resrvStatus=?,
+        startDate=?,
+        stay=?,
+        visitStatus=? 
+    where
+        id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        r1_0.member,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        r1_0.stay,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    where
+        r1_0.id=? for update
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+2026-09-13T19:00:12.674+09:00  INFO 949696 --- [backend] [    Test worker] c.s.b.r.s.PendingExpiryProcessor         : PENDING 만료로 예약 취소 처리: reservationId=30
+2026-09-13T19:00:12.675+09:00  WARN 949696 --- [backend] [    Test worker] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [updatedAt] property of the [com.sido.backend.reservation.entity.Reservation] entity was modified, but it won't be updated because the property is immutable.
+Hibernate: 
+    update
+        Reservation 
+    set
+        endDate=?,
+        holdToken=?,
+        isFarm=?,
+        member=?,
+        pendingExpiresAt=?,
+        personCnt=?,
+        reservedAt=?,
+        resrvStatus=?,
+        startDate=?,
+        stay=?,
+        visitStatus=? 
+    where
+        id=?
+2026-09-13T19:00:12.693+09:00  INFO 949696 --- [backend] [    Test worker] c.s.b.r.service.ReservationServiceImpl   : 예약 확정 프로세스 시작: reservationId=30
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        r1_0.member,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        r1_0.stay,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    where
+        r1_0.id=? for update
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    left join
+        StayImage i1_0 
+            on s1_0.id=i1_0.stay 
+    where
+        s1_0.id=? for update
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        r1_0.id=?
+Hibernate: 
+    select
+        rd1_0.date 
+    from
+        ReservationDay rd1_0 
+    where
+        rd1_0.stay=? 
+    order by
+        rd1_0.date
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayImage
+        (s3Key, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        count(sad1_0.id) 
+    from
+        StayAvailDate sad1_0 
+    where
+        sad1_0.stay=? 
+        and sad1_0.availableDate>=? 
+        and sad1_0.availableDate<? 
+        and not exists(select
+            1 
+        from
+            ReservationDay rd1_0 
+        where
+            rd1_0.stay=sad1_0.stay 
+            and rd1_0.date=sad1_0.availableDate)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        StayImage i1_0 
+    where
+        i1_0.stay=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        ReservationDay
+        (date, reservation, stay) 
+    values
+        (?, ?, ?)
+2026-09-13T19:00:12.851+09:00  INFO 949696 --- [backend] [    Test worker] c.s.b.r.service.ReservationServiceImpl   : 예약 확정 프로세스 시작: reservationId=31
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        r1_0.member,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        r1_0.stay,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    where
+        r1_0.id=? for update
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    left join
+        StayImage i1_0 
+            on s1_0.id=i1_0.stay 
+    where
+        s1_0.id=? for update
+Hibernate: 
+    select
+        sad1_0.id,
+        sad1_0.availableDate,
+        sad1_0.stay 
+    from
+        StayAvailDate sad1_0 
+    where
+        sad1_0.stay=? 
+        and sad1_0.availableDate>=? 
+        and sad1_0.availableDate<? 
+    order by
+        sad1_0.availableDate for update
+Hibernate: 
+    select
+        rd1_0.id,
+        rd1_0.date,
+        rd1_0.reservation,
+        rd1_0.stay 
+    from
+        ReservationDay rd1_0 
+    where
+        rd1_0.stay=? 
+        and rd1_0.date>=? 
+        and rd1_0.date<? for update
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        r1_0.id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        r1_0.id=?
+Hibernate: 
+    select
+        r1_0.id,
+        r1_0.createdAt,
+        r1_0.endDate,
+        r1_0.holdToken,
+        r1_0.isFarm,
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName,
+        r1_0.pendingExpiresAt,
+        r1_0.personCnt,
+        r1_0.reservedAt,
+        r1_0.resrvStatus,
+        r1_0.startDate,
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt,
+        r1_0.updatedAt,
+        r1_0.visitStatus 
+    from
+        Reservation r1_0 
+    left join
+        Member m1_0 
+            on m1_0.id=r1_0.member 
+    left join
+        Stay s1_0 
+            on s1_0.id=r1_0.stay 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        r1_0.id=?
+Hibernate: 
+    select
+        rd1_0.date 
+    from
+        ReservationDay rd1_0 
+    where
+        rd1_0.stay=? 
+    order by
+        rd1_0.date
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

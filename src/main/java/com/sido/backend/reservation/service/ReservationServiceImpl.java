@@ -55,7 +55,10 @@ import com.sido.backend.reservation.validation.ReservationValidator;
 import com.sido.backend.stay.entity.Stay;
 import com.sido.backend.stay.repository.StayRepository;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,6 +77,8 @@ public class ReservationServiceImpl implements ReservationService {
 	private final SimpMessagingTemplate messagingTemplate;
 	private final DateHoldService dateHoldService;
 	private final ApplicationEventPublisher eventPublisher;
+	@PersistenceContext
+	private EntityManager entityManager;
 
 	@Value("${app.s3.publicBaseUrl}")
 	private String publicBaseUrl;
@@ -163,7 +168,14 @@ public class ReservationServiceImpl implements ReservationService {
 			() -> new EntityNotFoundException("해당 예약을 찾을 수 없습니다.")
 		);
 
-		availabilityChecker.assertStayIsActive(reservation.getStay()); // 삭제된 사랑방인지 검증
+		// 예약 가능일 변경·숙소 비활성화와 직렬화하기 위해 예약이 속한 Stay 행도 잠근다.
+		// 연관으로 이미 로드된 Stay는 트랜잭션 스냅샷 기준의 과거 상태일 수 있으므로, PESSIMISTIC_WRITE로
+		// 잠그면서 최신 커밋 상태로 다시 읽는다(refresh). 이후 isActive·가용성 판정이 최신 값을 보게 한다.
+		// 잠금 순서: Reservation → Stay (updateOpenDates·deleteStay는 Stay만 잠그므로 순환 데드락 없음).
+		Stay stay = reservation.getStay();
+		entityManager.refresh(stay, LockModeType.PESSIMISTIC_WRITE);
+
+		availabilityChecker.assertStayIsActive(stay); // 삭제된(비활성화된) 사랑방인지 최신 상태로 검증
 		reservationValidator.assertOwnedBy(reservation, memberId); // 본인 예약 검증
 
 		// 멱등성: 이미 예약됐으면 현재 상태 그대로 반환
@@ -224,9 +236,8 @@ public class ReservationServiceImpl implements ReservationService {
 		));
 		log.info("예약이 성공적으로 확정되었습니다: reservationId={}", reservationId);
 
-		// 관리자에게 예약 확정 알림 보내기
+		// 관리자에게 예약 확정 알림 보내기 (위에서 잠근 stay 재사용)
 		log.info("관리자 알림 전송 로직 시작");
-		Stay stay = reservation.getStay();
 		if (stay == null) {
 			log.error("Reservation에 Stay 객체가 없습니다! reservationId={}", reservationId);
 			return toConfirmResponseDTO(reservation);

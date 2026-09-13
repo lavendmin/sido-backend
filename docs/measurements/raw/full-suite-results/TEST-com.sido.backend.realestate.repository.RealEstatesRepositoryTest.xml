@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.realestate.repository.RealEstatesRepositoryTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-13T09:59:50.862Z" hostname="BOOK-38TIIHH6ML" time="0.086">
+  <properties/>
+  <testcase name="saveRealEstatesTest()" classname="com.sido.backend.realestate.repository.RealEstatesRepositoryTest" time="0.038"/>
+  <testcase name="addMultipleRealEstatesTest()" classname="com.sido.backend.realestate.repository.RealEstatesRepositoryTest" time="0.046"/>
+  <system-out><![CDATA[2026-09-13T18:59:50.778+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.realestate.repository.RealEstatesRepositoryTest]: RealEstatesRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T18:59:50.858+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.realestate.repository.RealEstatesRepositoryTest
+Hibernate: 
+    insert 
+    into
+        RealEstate
+        (area, areaSize, capacity, description, house, location, price, roomCount, tradeType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        count(*) 
+    from
+        RealEstate re1_0
+Hibernate: 
+    insert 
+    into
+        RealEstate
+        (area, areaSize, capacity, description, house, location, price, roomCount, tradeType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        RealEstate
+        (area, areaSize, capacity, description, house, location, price, roomCount, tradeType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        RealEstate
+        (area, areaSize, capacity, description, house, location, price, roomCount, tradeType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        RealEstate
+        (area, areaSize, capacity, description, house, location, price, roomCount, tradeType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        RealEstate
+        (area, areaSize, capacity, description, house, location, price, roomCount, tradeType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        count(*) 
+    from
+        RealEstate re1_0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

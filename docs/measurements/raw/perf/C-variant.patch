@@ -1,0 +1,13 @@
+diff --git a/src/main/java/com/sido/backend/reservation/service/ReservationServiceImpl.java b/src/main/java/com/sido/backend/reservation/service/ReservationServiceImpl.java
+index 5c21ae6..22f863a 100644
+--- a/src/main/java/com/sido/backend/reservation/service/ReservationServiceImpl.java
++++ b/src/main/java/com/sido/backend/reservation/service/ReservationServiceImpl.java
+@@ -199,7 +199,7 @@ public class ReservationServiceImpl implements ReservationService {
+ 
+ 		// 예약 요청 검증 — SELECT FOR UPDATE로 날짜 행 선점 후 가용성 확인
+ 		reservationValidator.assertCoreRules(reservation.getStay(), startDate, endDate, personCnt);
+-		availabilityChecker.assertAllDatesAvailableWithLock(reservation.getStay().getId(), startDate, endDate);
++		availabilityChecker.assertAllDatesAvailable(reservation.getStay().getId(), startDate, endDate);
+ 
+ 		// 엔티티에 반영
+ 		reservation.setPersonCnt(personCnt);
