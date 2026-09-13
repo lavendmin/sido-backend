@@ -1,20 +1,30 @@
 package com.sido.backend.stay.repository;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.sido.backend.stay.dto.StayResrvStatus;
 import com.sido.backend.stay.entity.Stay;
 
+import jakarta.persistence.LockModeType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public interface StayRepository extends JpaRepository<Stay, Long> {
+	// 예약 확정·예약 가능일 변경·숙소 비활성화의 공통 동시성 제어 지점.
+	// 세 경로가 변경 전 같은 Stay 행을 PESSIMISTIC_WRITE로 잠가 서로를 직렬화한다.
+	// 잠금 읽기는 스냅샷이 아닌 최신 커밋 행을 읽으며, 잠금을 얻은 뒤 수행하는 후속 검증이
+	// 최신 상태를 보도록 이 조회를 각 경로의 첫 문장으로 둔다(잠금 → 검증 → 변경 순서).
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT s FROM Stay s WHERE s.id = :id")
+	Optional<Stay> findByIdForUpdate(@Param("id") Long id);
 	@Query("""
 		SELECT s,
 			CASE
