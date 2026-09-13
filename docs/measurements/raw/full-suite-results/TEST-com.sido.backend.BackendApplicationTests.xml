@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.BackendApplicationTests" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-13T09:59:43.189Z" hostname="BOOK-38TIIHH6ML" time="0.012">
+  <properties/>
+  <testcase name="contextLoads()" classname="com.sido.backend.BackendApplicationTests" time="0.012"/>
+  <system-out><![CDATA[2026-09-13T18:59:34.980+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.BackendApplicationTests]: BackendApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T18:59:35.072+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.BackendApplicationTests
+2026-09-13T18:59:35.105+09:00  INFO 949696 --- [backend] [    Test worker] m.p.springdotenv.DotenvPropertySource    : Initialized Dotenv with DotenvConfig{directory=null, filename=null, ignoreIfMalformed=false, ignoreIfMissing=true, systemProperties=false, prefix=null}
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.4)
+
+2026-09-13T18:59:35.222+09:00  INFO 949696 --- [backend] [    Test worker] c.sido.backend.BackendApplicationTests   : Starting BackendApplicationTests using Java 21.0.11 with PID 949696 (started by somin in C:\MyProjects\SIDO\sido-backend)
+2026-09-13T18:59:35.223+09:00  INFO 949696 --- [backend] [    Test worker] c.sido.backend.BackendApplicationTests   : The following 1 profile is active: "local"
+2026-09-13T18:59:36.758+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-13T18:59:36.759+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-13T18:59:37.019+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 253 ms. Found 10 JPA repository interfaces.
+2026-09-13T18:59:37.031+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-13T18:59:37.031+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-09-13T18:59:37.084+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.festival.repository.FestivalRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.084+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.member.repository.HostMemberRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.087+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.member.repository.MemberRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.087+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.realestate.repository.RealEstateImageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.088+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.realestate.repository.RealEstateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.089+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.reservation.repository.ReservationDayRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.090+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.reservation.repository.ReservationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.090+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.stay.repository.StayAvailDateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.091+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.stay.repository.StayImageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.092+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.stay.repository.StayRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T18:59:37.093+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 55 ms. Found 0 Redis repository interfaces.
+2026-09-13T18:59:37.406+09:00  INFO 949696 --- [backend] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-13T18:59:37.423+09:00  INFO 949696 --- [backend] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-13T18:59:37.469+09:00  INFO 949696 --- [backend] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-13T18:59:37.474+09:00  INFO 949696 --- [backend] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-09-13T18:59:37.496+09:00  INFO 949696 --- [backend] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection com.mysql.cj.jdbc.ConnectionImpl@24f8aff6
+2026-09-13T18:59:37.496+09:00  INFO 949696 --- [backend] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-09-13T18:59:37.501+09:00  INFO 949696 --- [backend] [    Test worker] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
+	Database driver: undefined/unknown
+	Database version: 8.0.46
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-13T18:59:38.043+09:00  INFO 949696 --- [backend] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: 
+    alter table FestivalImage 
+       drop 
+       foreign key FKcf8s98w64vst6pn12s1nkjedd
+Hibernate: 
+    alter table RealEstateImage 
+       drop 
+       foreign key FKpfwoyfqct927itycte6lxglc9
+Hibernate: 
+    alter table Reservation 
+       drop 
+       foreign key fk_Reservation_Member
+Hibernate: 
+    alter table Reservation 
+       drop 
+       foreign key fk_Reservation_Stay
+Hibernate: 
+    alter table ReservationDay 
+       drop 
+       foreign key fk_reservationDay_reservation
+Hibernate: 
+    alter table ReservationDay 
+       drop 
+       foreign key fk_reservationDay_stay
+Hibernate: 
+    alter table Stay 
+       drop 
+       foreign key fk_Stay_Member_host
+Hibernate: 
+    alter table StayAvailDate 
+       drop 
+       foreign key fk_StayAvailDate_Stay
+Hibernate: 
+    alter table StayImage 
+       drop 
+       foreign key FK4x0ck2pbgme08qsqqmu0i9cys
+Hibernate: 
+    drop table if exists Festival
+Hibernate: 
+    drop table if exists FestivalImage
+Hibernate: 
+    drop table if exists Member
+Hibernate: 
+    drop table if exists RealEstate
+Hibernate: 
+    drop table if exists RealEstateImage
+Hibernate: 
+    drop table if exists Reservation
+Hibernate: 
+    drop table if exists ReservationDay
+Hibernate: 
+    drop table if exists Stay
+Hibernate: 
+    drop table if exists StayAvailDate
+Hibernate: 
+    drop table if exists StayImage
+Hibernate: 
+    create table Festival (
+        endDate date not null,
+        price integer not null,
+        startDate date not null,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        city varchar(31) not null,
+        title varchar(64) not null,
+        location varchar(100) not null,
+        description varchar(1000) not null,
+        url varchar(2000) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table FestivalImage (
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        festival bigint not null,
+        id bigint not null auto_increment,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        s3Key varchar(512) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table Member (
+        stayCount int default 0 not null,
+        id bigint not null auto_increment,
+        memberType varchar(10) not null,
+        phone varchar(15) not null,
+        name varchar(30),
+        villageName varchar(30),
+        loginId varchar(50) not null,
+        region varchar(100),
+        password varchar(250) not null,
+        role enum ('ROLE_ADMIN','ROLE_USER'),
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table RealEstate (
+        area integer,
+        areaSize float(53),
+        capacity integer,
+        roomCount integer,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        price bigint,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        description varchar(255),
+        house varchar(255),
+        location varchar(255),
+        tradeType varchar(255),
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table RealEstateImage (
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        realEstate bigint not null,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        s3Key varchar(512) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table Reservation (
+        endDate date not null,
+        isFarm bit,
+        personCnt integer not null,
+        startDate date not null,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        member bigint,
+        pendingExpiresAt datetime(6),
+        reservedAt datetime(6),
+        stay bigint,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        holdToken varchar(255),
+        resrvStatus enum ('CANCELLED','PENDING','RESERVED'),
+        visitStatus enum ('COMPLETED','IN_PROGRESS','UPCOMING'),
+        primary key (id),
+        check (    (resrvStatus = 'PENDING' AND isFarm IS NULL AND visitStatus IS NULL AND holdToken IS NOT NULL)
+OR (resrvStatus = 'RESERVED' AND isFarm IS NOT NULL AND visitStatus IS NOT NULL AND holdToken IS NULL)
+OR (resrvStatus = 'CANCELLED' AND visitStatus IS NULL AND holdToken IS NULL)
+)
+    ) engine=InnoDB
+Hibernate: 
+    create table ReservationDay (
+        date date not null,
+        id bigint not null auto_increment,
+        reservation bigint,
+        stay bigint,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table Stay (
+        areaSize integer not null,
+        capacity integer not null,
+        isActive bit not null,
+        isHomestay bit not null,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        host bigint,
+        id bigint not null auto_increment,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        hostName varchar(9),
+        hostPhone varchar(31),
+        address varchar(64) not null,
+        detailAddress varchar(64),
+        title varchar(64) not null,
+        description varchar(1000) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table StayAvailDate (
+        availableDate date not null,
+        id bigint not null auto_increment,
+        stay bigint,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table StayImage (
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        stay bigint not null,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        s3Key varchar(512) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    alter table Member 
+       add constraint UKredywmoh8x2ku6ab3ghhkk2nr unique (phone)
+Hibernate: 
+    alter table Member 
+       add constraint UK3gj1odv84axhg8cjrvgx4xxhj unique (loginId)
+Hibernate: 
+    alter table ReservationDay 
+       add constraint uk_ReservationDay_stay_date unique (stay, date)
+Hibernate: 
+    alter table Stay 
+       add constraint uk_Stay_address_detailAddress unique (address, detailAddress)
+Hibernate: 
+    alter table StayAvailDate 
+       add constraint uk_StayAvailDate_stay_availableDate unique (stay, availableDate)
+Hibernate: 
+    alter table FestivalImage 
+       add constraint FKcf8s98w64vst6pn12s1nkjedd 
+       foreign key (festival) 
+       references Festival (id)
+Hibernate: 
+    alter table RealEstateImage 
+       add constraint FKpfwoyfqct927itycte6lxglc9 
+       foreign key (realEstate) 
+       references RealEstate (id)
+Hibernate: 
+    alter table Reservation 
+       add constraint fk_Reservation_Member 
+       foreign key (member) 
+       references Member(id) 
+       on delete set null
+Hibernate: 
+    alter table Reservation 
+       add constraint fk_Reservation_Stay 
+       foreign key (stay) 
+       references Stay(id) 
+       on delete set null
+Hibernate: 
+    alter table ReservationDay 
+       add constraint fk_reservationDay_reservation 
+       foreign key (reservation) 
+       references Reservation(id) 
+       on delete cascade
+Hibernate: 
+    alter table ReservationDay 
+       add constraint fk_reservationDay_stay 
+       foreign key (stay) 
+       references Stay(id) 
+       on delete set null
+Hibernate: 
+    alter table Stay 
+       add constraint fk_Stay_Member_host 
+       foreign key (host) 
+       references Member(id)
+on delete cascade
+on update cascade
+
+Hibernate: 
+    alter table StayAvailDate 
+       add constraint fk_StayAvailDate_Stay 	foreign key (stay)
+	   
+       references Stay(id)
+	    
+       on DELETE cascade 
+       on UPDATE cascade
+
+Hibernate: 
+    alter table StayImage 
+       add constraint FK4x0ck2pbgme08qsqqmu0i9cys 
+       foreign key (stay) 
+       references Stay (id)
+2026-09-13T18:59:39.928+09:00  INFO 949696 --- [backend] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-13T18:59:40.169+09:00  INFO 949696 --- [backend] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-09-13T18:59:41.261+09:00  WARN 949696 --- [backend] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-13T18:59:41.279+09:00  INFO 949696 --- [backend] [    Test worker] com.sido.backend.config.SecurityConfig   : ***** SecurityConfig - Security Filter Chain *****
+2026-09-13T18:59:43.052+09:00  INFO 949696 --- [backend] [    Test worker] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-09-13T18:59:43.052+09:00  INFO 949696 --- [backend] [    Test worker] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@44d5582b]]
+2026-09-13T18:59:43.052+09:00  INFO 949696 --- [backend] [    Test worker] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-09-13T18:59:43.185+09:00  INFO 949696 --- [backend] [    Test worker] c.sido.backend.BackendApplicationTests   : Started BackendApplicationTests in 8.095 seconds (process running for 100.158)
+Hibernate: 
+    select
+        r1_0.id 
+    from
+        Reservation r1_0 
+    where
+        r1_0.resrvStatus=? 
+        and r1_0.pendingExpiresAt<?
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

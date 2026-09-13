@@ -25,7 +25,10 @@ export const options = {
       maxDuration: '60s',
     },
   },
-  thresholds: { http_req_failed: ['rate<0.01'] },
+  thresholds: {
+    http_req_failed: ['rate<0.01'], // 5xx·타임아웃 없어야 함
+    confirm_ok: ['count==1'],       // 동일 날짜 경합: 정확히 1건만 확정 성공(이중예약 없음)
+  },
 };
 
 http.setResponseCallback(http.expectedStatuses(200, 201, 409, 410));

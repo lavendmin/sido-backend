@@ -25,6 +25,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
+import com.sido.backend.common.exception.ConflictException;
+import com.sido.backend.common.exception.ResourceGoneException;
 import com.sido.backend.member.entity.HostMember;
 import com.sido.backend.member.entity.Member;
 import com.sido.backend.member.entity.MemberRole;
@@ -45,7 +47,11 @@ import com.sido.backend.stay.repository.StayImageRepository;
 import com.sido.backend.stay.repository.StayRepository;
 import com.sido.backend.stay.service.StayService;
 
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 
 /**
@@ -84,6 +90,7 @@ class ReservationVsDateChangeConcurrencyTest {
 	@Autowired private MemberRepository memberRepository;
 	@Autowired private HostMemberRepository hostMemberRepository;
 	@Autowired private StringRedisTemplate redisTemplate;
+	@Autowired private PlatformTransactionManager txManager;
 	@PersistenceContext private EntityManager entityManager;
 
 	// 운영자 경로의 잠금 획득(StayRepository.findByIdForUpdate)을 seam 으로 가로채, 그 직후에 멈춰 확정을 끼워 넣는다.
@@ -173,7 +180,7 @@ class ReservationVsDateChangeConcurrencyTest {
 		// updateOpenDates가 Stay 행을 잠근 직후에 멈춰, 그 잠금을 쥔 채로 확정을 완주시키려 한다.
 		// baseline(잠금 없음)에서는 확정이 끼어들어 정합성 위반이 재현되고, 공통 보호 규칙 도입 후에는
 		// 확정이 이 Stay 잠금에 막혀 운영자가 이기고 확정은 최신 상태 검사로 거절된다.
-		doAnswer(invocation -> pauseThenFind(invocation, reachedCheck, confirmDone, pausedOnce, "updateOpenDates"))
+		doAnswer(invocation -> pauseThenReal(invocation, reachedCheck, confirmDone, pausedOnce, false, "updateOpenDates"))
 			.when(spiedStayRepository).findByIdForUpdate(stayId);
 
 		AtomicBoolean updateSucceeded = new AtomicBoolean(false);
@@ -219,21 +226,26 @@ class ReservationVsDateChangeConcurrencyTest {
 		log.info("결과: updateSucceeded={}, confirmSucceeded={}, status={}, avail={}, reserved={}",
 			updateSucceeded.get(), confirmSucceeded.get(), statusOf(rid), availDates, reservedDates);
 
+		// 이 강제 인터리빙에서는 운영자가 Stay 행 잠금을 먼저 확보하므로 운영자가 이긴다.
+		// 운영자는 성공하고, 확정은 닫힌 날짜를 보고 예상된 도메인 예외로 거절돼야 한다.
+		assertThat(updateErr.get()).as("운영자(날짜 닫기)는 성공해야 한다: " + updateErr.get()).isNull();
+		assertThat(updateSucceeded.get()).as("운영자(날짜 닫기)가 잠금을 먼저 확보해 성공해야 한다").isTrue();
+		assertThat(confirmSucceeded.get()).as("확정은 최신 가용성 검사에서 거절돼야 한다").isFalse();
+		assertThat(confirmErr.get())
+			.as("확정 거절은 예상된 ConflictException 이어야 한다(예기치 못한 5xx·데드락이 아님): " + confirmErr.get())
+			.isInstanceOf(ConflictException.class);
+
 		// 서비스 규칙: 충돌하는 두 변경이 모두 성공하면 안 된다
 		assertThat(updateSucceeded.get() && confirmSucceeded.get())
 			.as("날짜 닫기와 확정이 모두 성공하면 확정 점유일이 예약 가능일에서 사라진다(정합성 위반)")
 			.isFalse();
 
-		// 핵심 불변식: 확정된 점유일은 반드시 예약 가능일로 남아 있어야 한다
+		// 확정이 거절됐으므로 점유 행이 없고(부분 저장 없음), 확정된 점유일은 항상 예약 가능일에 포함돼야 한다
+		assertThat(reservedDates).as("거절된 확정은 ReservationDay 점유를 남기지 않아야 한다").isEmpty();
 		assertThat(availDates)
 			.as("확정된 점유일(ReservationDay)은 모두 예약 가능일(StayAvailDate)에 남아 있어야 한다")
 			.containsAll(reservedDates);
-
-		// 확정됐다면 그 기간 전체가 점유·예약가능일에 정합적으로 존재해야 한다
-		if (confirmed) {
-			assertThat(reservedDates).as("확정 성공 시 예약 기간 전체가 점유돼야 한다").containsAll(nights);
-			assertThat(availDates).as("확정 성공 시 점유일은 예약 가능일로 유지돼야 한다").containsAll(nights);
-		}
+		assertThat(confirmed).as("확정은 RESERVED 로 전이되지 않아야 한다").isFalse();
 	}
 
 	@Test
@@ -248,7 +260,7 @@ class ReservationVsDateChangeConcurrencyTest {
 		// deleteStay가 Stay 행을 잠근 직후에 멈춰, 그 잠금을 쥔 채로 확정을 완주시키려 한다.
 		// baseline(잠금 없음)에서는 확정이 끼어들어 정합성 위반이 재현되고, 공통 보호 규칙 도입 후에는
 		// 확정이 이 Stay 잠금에 막혀 운영자가 이기고 확정은 최신 isActive 검사로 거절된다.
-		doAnswer(invocation -> pauseThenFind(invocation, reachedCheck, confirmDone, pausedOnce, "deleteStay"))
+		doAnswer(invocation -> pauseThenReal(invocation, reachedCheck, confirmDone, pausedOnce, false, "deleteStay"))
 			.when(spiedStayRepository).findByIdForUpdate(stayId);
 
 		AtomicReference<StayDeleteDTO> deleteResult = new AtomicReference<>();
@@ -296,17 +308,125 @@ class ReservationVsDateChangeConcurrencyTest {
 		log.info("에러: deleteErr={}, confirmErr={}",
 			String.valueOf(deleteErr.get()), String.valueOf(confirmErr.get()));
 
-		// 서비스 규칙(숙소 비활성화 정책): 확정 성공과 숙소 비활성화가 모두 성공하면 안 된다
+		// 이 강제 인터리빙에서는 운영자(비활성화)가 Stay 행 잠금을 먼저 확보하므로 운영자가 이긴다.
+		// 운영자는 비활성화에 성공하고, 확정은 최신 isActive 를 보고 예상된 도메인 예외로 거절돼야 한다.
 		boolean deletedReported = deleteResult.get() != null && deleteResult.get().deleted();
+		assertThat(deleteErr.get()).as("숙소 비활성화는 성공해야 한다: " + deleteErr.get()).isNull();
+		assertThat(deletedReported).as("운영자(비활성화)가 잠금을 먼저 확보해 성공해야 한다").isTrue();
+		assertThat(confirmSucceeded.get()).as("확정은 비활성화된 숙소를 보고 거절돼야 한다").isFalse();
+		assertThat(confirmErr.get())
+			.as("확정 거절은 예상된 ResourceGoneException 이어야 한다(예기치 못한 5xx가 아님): " + confirmErr.get())
+			.isInstanceOf(ResourceGoneException.class);
+
+		// 서비스 규칙(숙소 비활성화 정책): 확정 성공과 숙소 비활성화가 모두 성공하면 안 된다
 		assertThat(confirmSucceeded.get() && deletedReported)
 			.as("확정 성공과 숙소 비활성화가 동시에 성공하면, 확정 예약이 비활성 숙소에 남는다(정합성 위반)")
 			.isFalse();
 
-		// 확정됐다면 숙소는 활성 상태로 유지되고, 점유일은 예약 가능일에 남아 있어야 한다
-		if (confirmed) {
-			assertThat(deactivated).as("확정된 예정 예약이 있으면 숙소가 비활성화되면 안 된다").isFalse();
-			assertThat(availDates).as("확정 점유일은 예약 가능일에 남아 있어야 한다").containsAll(reservedDates);
-		}
+		// 확정이 거절됐으므로 점유 행이 없어야 한다
+		assertThat(reservedDates).as("거절된 확정은 ReservationDay 점유를 남기지 않아야 한다").isEmpty();
+		assertThat(confirmed).as("확정은 RESERVED 로 전이되지 않아야 한다").isFalse();
+		assertThat(deactivated).as("운영자가 이겨 숙소는 비활성화 상태여야 한다").isTrue();
+	}
+
+	@Test
+	@DisplayName("[확정 선행] 확정이 먼저 커밋되면, 그 날짜를 닫으려는 updateOpenDates 는 거절된다")
+	void confirmFirst_thenCloseDates_rejected() {
+		Long rid = createPending();
+		reservationService.confirmReservation(memberId, rid, new ReservationConfirmRequestDTO(2, false));
+		assertThat(statusOf(rid)).isEqualTo(ResrvStatus.RESERVED);
+
+		// 확정이 이미 커밋된 뒤 운영자가 그 날짜를 닫으려 하면 거절돼야 한다
+		assertThatThrownBy(() -> stayService.updateOpenDates(stayId, List.of()))
+			.as("예약된 날짜를 닫으려 하면 ConflictException 으로 거절돼야 한다")
+			.isInstanceOf(ConflictException.class);
+
+		// 점유·예약 가능일이 그대로 유지된다(부분 삭제 없음)
+		assertThat(reservationDayRepository.findAllReserved(stayId)).containsExactlyElementsOf(nights);
+		assertThat(stayAvailDateRepository.findAllDatesByStayId(stayId)).containsAll(nights);
+	}
+
+	@Test
+	@DisplayName("[확정 선행] 확정된 예정 예약이 있으면 deleteStay 는 비활성화하지 않는다")
+	void confirmFirst_thenDeactivate_rejected() {
+		Long rid = createPending();
+		reservationService.confirmReservation(memberId, rid, new ReservationConfirmRequestDTO(2, false));
+		assertThat(statusOf(rid)).isEqualTo(ResrvStatus.RESERVED);
+
+		StayDeleteDTO result = stayService.deleteStay(hostId, stayId);
+		assertThat(result.deleted()).as("예정 예약이 있으면 비활성화 거절").isFalse();
+		assertThat(result.hasUpcomingReservations()).as("예정 예약 존재를 보고해야 한다").isTrue();
+		assertThat(stayRepository.findById(stayId).orElseThrow().getIsActive())
+			.as("숙소는 활성 상태로 유지돼야 한다").isTrue();
+	}
+
+	@Test
+	@DisplayName("[운영자 선행 롤백] 날짜 닫기가 잠금 획득 후 롤백되면, 확정은 원래 상태로 정상 진행된다")
+	void operatorRollback_thenConfirmProceeds() throws InterruptedException {
+		Long rid = createPending();
+
+		CountDownLatch reachedCheck = new CountDownLatch(1);
+		CountDownLatch confirmDone = new CountDownLatch(1);
+		AtomicBoolean pausedOnce = new AtomicBoolean(false);
+
+		// 운영자가 Stay 행 잠금을 쥔 채 멈춘 뒤 예외로 롤백한다(throwAfterPause=true).
+		doAnswer(invocation -> pauseThenReal(invocation, reachedCheck, confirmDone, pausedOnce, true, "update-rollback"))
+			.when(spiedStayRepository).findByIdForUpdate(stayId);
+
+		AtomicBoolean confirmSucceeded = new AtomicBoolean(false);
+		AtomicReference<Throwable> updateErr = new AtomicReference<>();
+		AtomicReference<Throwable> confirmErr = new AtomicReference<>();
+
+		Thread updateThread = new Thread(() -> {
+			try {
+				stayService.updateOpenDates(stayId, List.of());
+			} catch (Throwable t) {
+				updateErr.set(t);
+			}
+		}, "update-open-dates");
+
+		Thread confirmThread = new Thread(() -> {
+			awaitGate(reachedCheck);
+			try {
+				reservationService.confirmReservation(memberId, rid, new ReservationConfirmRequestDTO(2, false));
+				confirmSucceeded.set(true);
+			} catch (Throwable t) {
+				confirmErr.set(t);
+			} finally {
+				confirmDone.countDown();
+			}
+		}, "confirm");
+
+		updateThread.start();
+		confirmThread.start();
+		updateThread.join(JOIN_TIMEOUT_MS);
+		confirmThread.join(JOIN_TIMEOUT_MS);
+
+		dumpIfAlive(updateThread, confirmThread);
+		assertThat(updateThread.isAlive()).as("updateOpenDates 스레드가 제한시간 안에 종료돼야 한다").isFalse();
+		assertThat(confirmThread.isAlive()).as("confirm 스레드가 제한시간 안에 종료돼야 한다").isFalse();
+
+		// 운영자는 강제 롤백으로 실패하고, 확정은 롤백된(그대로 열린) 날짜를 보고 성공해야 한다
+		assertThat(updateErr.get()).as("운영자는 강제 롤백으로 실패해야 한다").isNotNull();
+		assertThat(confirmSucceeded.get())
+			.as("선행 운영자 작업이 롤백됐으므로 확정은 성공해야 한다: " + confirmErr.get()).isTrue();
+		assertThat(statusOf(rid)).isEqualTo(ResrvStatus.RESERVED);
+		assertThat(reservationDayRepository.findAllReserved(stayId)).containsExactlyElementsOf(nights);
+		assertThat(stayAvailDateRepository.findAllDatesByStayId(stayId)).containsAll(nights);
+	}
+
+	@Test
+	@DisplayName("[잠금 검증] StayRepository.findByIdForUpdate 는 PESSIMISTIC_WRITE 잠금을 획득한다")
+	void findByIdForUpdate_acquiresPessimisticWriteLock() {
+		// 경합 테스트가 실제 잠금 대신 EntityManager 로 잠그므로, 실제 repository 메서드의 @Lock 유지 여부를
+		// 여기서 직접 검증한다. @Lock 이 빠지면 잠금 모드가 NONE 이 되어 이 단언이 실패한다.
+		// (메서드에 @Transactional 을 붙이면 @BeforeEach warmup 까지 한 트랜잭션에 묶여 깨지므로 프로그램적 트랜잭션 사용)
+		new TransactionTemplate(txManager).executeWithoutResult(status -> {
+			Stay locked = stayRepository.findByIdForUpdate(stayId).orElseThrow();
+			assertThat(entityManager.getLockMode(locked))
+				.as("findByIdForUpdate 에 @Lock(PESSIMISTIC_WRITE) 이 유지돼야 한다")
+				.isEqualTo(LockModeType.PESSIMISTIC_WRITE);
+		});
 	}
 
 	// ─────────────────────────── helpers ───────────────────────────
@@ -374,18 +494,22 @@ class ReservationVsDateChangeConcurrencyTest {
 		return reservationRepository.findById(rid).orElseThrow().getResrvStatus();
 	}
 
-	// 운영자 경로의 잠금 획득(findByIdForUpdate)을 가로채, Stay 행을 실제로 PESSIMISTIC_WRITE 로 잠근 뒤
-	// 그 직후에 한 번만 멈춰 확정이 끼어들 창을 연다. 운영자가 잠금을 쥔 채 멈추므로 확정은 Stay 행 잠금에서
-	// 막히고(공통 보호 규칙 검증), 신호가 오지 않아도 PAUSE_TIMEOUT_SEC 뒤 재개해 교착을 막는다.
-	// 운영자 트랜잭션에 바인딩된 EntityManager 로 잠금 조회를 수행한다(spy 의 callRealMethod 의존 회피).
-	private Object pauseThenFind(org.mockito.invocation.InvocationOnMock invocation,
-		CountDownLatch reachedCheck, CountDownLatch confirmDone, AtomicBoolean pausedOnce, String who) throws Throwable {
+	// 운영자 경로의 잠금 획득 지점을 가로채, 운영자 트랜잭션에서 Stay 행을 실제 PESSIMISTIC_WRITE 로 잠근 뒤
+	// 그 직후에 한 번만 멈춰 확정이 끼어들 창을 연다. 신호가 오지 않아도 PAUSE_TIMEOUT_SEC 뒤 재개해 교착을 막는다.
+	// throwAfterPause=true 이면 잠금을 쥔 채 멈춘 뒤 예외를 던져 운영자 선행 트랜잭션 롤백을 재현한다.
+	// (spy 의 callRealMethod 는 Spring Data 프록시에서 동시 실행 시 불안정해 EntityManager 로 잠금을 획득한다.
+	//  실제 findByIdForUpdate 의 @Lock 유지 여부는 findByIdForUpdate_acquiresPessimisticWriteLock 테스트가 검증한다.)
+	private Object pauseThenReal(org.mockito.invocation.InvocationOnMock invocation, CountDownLatch reachedCheck,
+		CountDownLatch confirmDone, AtomicBoolean pausedOnce, boolean throwAfterPause, String who) throws Throwable {
 		Long id = invocation.getArgument(0);
-		Stay real = entityManager.find(Stay.class, id, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+		Stay real = entityManager.find(Stay.class, id, LockModeType.PESSIMISTIC_WRITE);
 		if (pausedOnce.compareAndSet(false, true)) {
 			reachedCheck.countDown();
 			boolean signaled = confirmDone.await(PAUSE_TIMEOUT_SEC, TimeUnit.SECONDS);
-			log.info("{} 잠금 획득 후 재개 (confirm 완료 신호={})", who, signaled);
+			log.info("{} 잠금 획득 후 재개 (confirm 완료 신호={}, throwAfterPause={})", who, signaled, throwAfterPause);
+			if (throwAfterPause) {
+				throw new IllegalStateException("실험용 강제 롤백 (운영자 선행 트랜잭션 롤백 재현)");
+			}
 		}
 		return Optional.ofNullable(real);
 	}
