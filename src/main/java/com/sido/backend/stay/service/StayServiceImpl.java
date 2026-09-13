@@ -217,7 +217,9 @@ public class StayServiceImpl implements StayService {
 	@Override
 	@Transactional
 	public StayDeleteDTO deleteStay(Long memberId, Long stayId) {
-		Stay stay = stayRepository.findById(stayId).orElseThrow(
+		// 확정·예약 가능일 변경과 직렬화하기 위해 Stay 행을 먼저 잠근다.
+		// 잠금 뒤의 예정 예약 검사(existsUpcoming)가 최신 커밋 상태를 보도록 이 조회를 첫 문장으로 둔다.
+		Stay stay = stayRepository.findByIdForUpdate(stayId).orElseThrow(
 			() -> new EntityNotFoundException("해당 사랑방을 찾을 수 없습니다.")
 		);
 		HostMember hostMember = hostMemberRepository.findById(memberId).orElseThrow(
@@ -263,7 +265,9 @@ public class StayServiceImpl implements StayService {
 	@Override
 	@Transactional
 	public OpenAndReservedDatesDTO updateOpenDates(Long stayId, List<LocalDate> dates) {
-		Stay stay = stayRepository.findById(stayId).orElseThrow(
+		// 확정·숙소 비활성화와 직렬화하기 위해 Stay 행을 먼저 잠근다.
+		// 잠금 뒤의 예약된 날짜 검사(findReservedDatesIn)가 최신 커밋 상태를 보도록 이 조회를 첫 문장으로 둔다.
+		Stay stay = stayRepository.findByIdForUpdate(stayId).orElseThrow(
 			() -> new EntityNotFoundException("해당 사랑방을 찾을 수 없습니다.")
 		);
 

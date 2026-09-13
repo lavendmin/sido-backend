@@ -51,9 +51,9 @@ import jakarta.persistence.PersistenceContext;
 /**
  * 예약 확정(고객)과 예약 가능일 변경·숙소 비활성화(운영자)의 경합 재현·계약 검증.
  * <p>
- * 두 운영자 경로는 "예약됐나?"를 <b>잠금 없는 SELECT</b>로 검증한 뒤 삭제/비활성화한다. 이 검증과 변경 사이에
- * 확정이 끼어들면 확정 점유일이 예약 가능일에서 사라질 수 있다(계획 §1의 가설). 검증 직후 지점을
- * {@link MockitoSpyBean} 래치로 잡아, 그 창에서 확정을 완주시켜 경합을 결정론적으로 만든다.
+ * 두 운영자 경로는 "예약됐나?"를 검증한 뒤 삭제/비활성화한다. 이 검증과 변경 사이에 확정이 끼어들면
+ * 확정 점유일이 예약 가능일에서 사라질 수 있다(계획 §1의 가설). 운영자가 Stay 행 잠금을 획득한 직후 지점을
+ * {@link MockitoSpyBean} 래치로 잡아, 그 잠금을 쥔 채로 확정을 완주시키려 시도해 경합을 결정론적으로 만든다.
  * <p>
  * 검증하는 서비스 계약(§2):
  * <ul>
@@ -61,7 +61,8 @@ import jakarta.persistence.PersistenceContext;
  *   <li>확정된 점유일({@code ReservationDay})은 반드시 예약 가능일({@code StayAvailDate})로 남아 있다.</li>
  *   <li>확정된 예정 예약이 있으면 숙소 비활성화는 거절된다(결정 2: 기존 정책 유지).</li>
  * </ul>
- * 보호 규칙 도입 전(baseline)에는 이 계약이 깨져 RED가 정상이다. 실 MySQL·Redis 필요.
+ * 공통 보호 규칙(확정·날짜변경·비활성화의 Stay 행 잠금 직렬화) 도입 전 baseline 에서는 이 계약이 깨져 RED,
+ * 도입 후에는 GREEN 이다. 실 MySQL·Redis 필요.
  * 래치는 잠금으로 확정이 막혀 신호가 오지 않는 경우에도 타임아웃으로 재개해 테스트 교착을 막는다.
  */
 @SpringBootTest
@@ -85,9 +86,10 @@ class ReservationVsDateChangeConcurrencyTest {
 	@Autowired private StringRedisTemplate redisTemplate;
 	@PersistenceContext private EntityManager entityManager;
 
-	// 운영자 경로의 첫 문장(StayRepository.findById)을 seam 으로 가로채 트랜잭션 스냅샷을 고정시킨 뒤 확정을 끼워 넣는다.
-	// StayRepository 는 confirmReservation 이 전혀 호출하지 않으므로(생성 경로에서만 사용), 경합 구간에는
-	// 운영자 스레드만 이 spy 를 건드린다 → Mockito 동시 호출 불안정이 원천 제거된다.
+	// 운영자 경로의 잠금 획득(StayRepository.findByIdForUpdate)을 seam 으로 가로채, 그 직후에 멈춰 확정을 끼워 넣는다.
+	// confirmReservation 은 StayRepository 를 호출하지 않고(Stay 잠금은 EntityManager.refresh 로 직접 획득) 확정은
+	// 생성 경로에서만 StayRepository 를 쓰므로, 경합 구간에는 운영자 스레드만 이 spy 를 건드린다
+	// → Mockito 동시 호출 불안정이 원천 제거된다.
 	// confirm 이 쓰는 ReservationRepository·ReservationDayRepository·StayAvailDateRepository 를 spy 로 감싸면
 	// 확정 스레드와 동시 호출돼 MockitoException·데드락이 발생했다.
 	@MockitoSpyBean private StayRepository spiedStayRepository;
@@ -145,6 +147,16 @@ class ReservationVsDateChangeConcurrencyTest {
 		nights.forEach(d -> keys.add(holdKey(stayId, d)));
 		createdReservationIds.forEach(id -> keys.add(ALARM_PREFIX + id));
 		redisTemplate.delete(keys);
+
+		// @SpringBootTest는 커밋된 예약을 남긴다. 공유 MySQL을 오염시켜 count 기반 리포지토리 테스트를
+		// 깨뜨리므로, 이 테스트가 만든 예약을 정리한다(ReservationDay는 on delete cascade로 함께 삭제됨).
+		createdReservationIds.forEach(id -> {
+			try {
+				reservationRepository.deleteById(id);
+			} catch (Exception ignore) {
+				// 이미 삭제된 예약 등은 무시
+			}
+		});
 	}
 
 	// ─────────────────────────── tests ───────────────────────────
@@ -158,10 +170,11 @@ class ReservationVsDateChangeConcurrencyTest {
 		CountDownLatch confirmDone = new CountDownLatch(1);
 		AtomicBoolean pausedOnce = new AtomicBoolean(false);
 
-		// updateOpenDates의 첫 읽기(findById) 직후에 멈춘다. 여기서 스냅샷이 고정되고, 이후
-		// "예약된 날짜 삭제 불가" 검증(findReservedDatesIn)이 그 스냅샷으로 확정 점유를 놓치는 것이 근본 원인이다.
+		// updateOpenDates가 Stay 행을 잠근 직후에 멈춰, 그 잠금을 쥔 채로 확정을 완주시키려 한다.
+		// baseline(잠금 없음)에서는 확정이 끼어들어 §2 위반이 재현되고, 공통 보호 규칙 도입 후에는
+		// 확정이 이 Stay 잠금에 막혀 운영자가 이기고 확정은 최신 상태 검사로 거절된다.
 		doAnswer(invocation -> pauseThenFind(invocation, reachedCheck, confirmDone, pausedOnce, "updateOpenDates"))
-			.when(spiedStayRepository).findById(stayId);
+			.when(spiedStayRepository).findByIdForUpdate(stayId);
 
 		AtomicBoolean updateSucceeded = new AtomicBoolean(false);
 		AtomicBoolean confirmSucceeded = new AtomicBoolean(false);
@@ -232,10 +245,11 @@ class ReservationVsDateChangeConcurrencyTest {
 		CountDownLatch confirmDone = new CountDownLatch(1);
 		AtomicBoolean pausedOnce = new AtomicBoolean(false);
 
-		// deleteStay의 첫 읽기(findById) 직후에 멈춘다. 여기서 스냅샷이 고정되고, 이후
-		// "예정 예약 있음" 검증(existsUpcomingByStay)이 그 스냅샷으로 확정된 예정 예약을 놓치는 것이 근본 원인이다.
+		// deleteStay가 Stay 행을 잠근 직후에 멈춰, 그 잠금을 쥔 채로 확정을 완주시키려 한다.
+		// baseline(잠금 없음)에서는 확정이 끼어들어 §2 위반이 재현되고, 공통 보호 규칙 도입 후에는
+		// 확정이 이 Stay 잠금에 막혀 운영자가 이기고 확정은 최신 isActive 검사로 거절된다.
 		doAnswer(invocation -> pauseThenFind(invocation, reachedCheck, confirmDone, pausedOnce, "deleteStay"))
-			.when(spiedStayRepository).findById(stayId);
+			.when(spiedStayRepository).findByIdForUpdate(stayId);
 
 		AtomicReference<StayDeleteDTO> deleteResult = new AtomicReference<>();
 		AtomicBoolean confirmSucceeded = new AtomicBoolean(false);
@@ -360,18 +374,18 @@ class ReservationVsDateChangeConcurrencyTest {
 		return reservationRepository.findById(rid).orElseThrow().getResrvStatus();
 	}
 
-	// 운영자 경로의 첫 읽기(findById)를 실제 조회한 뒤, 그 직후에 한 번만 멈춰 확정이 끼어들 창을 연다.
-	// Spring Data 내장 findById 는 spy 의 callRealMethod 가 MockitoException 을 던지므로, 운영자 트랜잭션에
-	// 바인딩된 EntityManager.find 로 실제 엔티티를 조회한다(이 조회가 트랜잭션 스냅샷을 고정한다).
-	// confirm 이 잠금으로 막혀 신호가 오지 않아도 PAUSE_TIMEOUT_SEC 뒤 재개해 교착을 막는다.
+	// 운영자 경로의 잠금 획득(findByIdForUpdate)을 가로채, Stay 행을 실제로 PESSIMISTIC_WRITE 로 잠근 뒤
+	// 그 직후에 한 번만 멈춰 확정이 끼어들 창을 연다. 운영자가 잠금을 쥔 채 멈추므로 확정은 Stay 행 잠금에서
+	// 막히고(공통 보호 규칙 검증), 신호가 오지 않아도 PAUSE_TIMEOUT_SEC 뒤 재개해 교착을 막는다.
+	// 운영자 트랜잭션에 바인딩된 EntityManager 로 잠금 조회를 수행한다(spy 의 callRealMethod 의존 회피).
 	private Object pauseThenFind(org.mockito.invocation.InvocationOnMock invocation,
 		CountDownLatch reachedCheck, CountDownLatch confirmDone, AtomicBoolean pausedOnce, String who) throws Throwable {
 		Long id = invocation.getArgument(0);
-		Stay real = entityManager.find(Stay.class, id);
+		Stay real = entityManager.find(Stay.class, id, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
 		if (pausedOnce.compareAndSet(false, true)) {
 			reachedCheck.countDown();
 			boolean signaled = confirmDone.await(PAUSE_TIMEOUT_SEC, TimeUnit.SECONDS);
-			log.info("{} 첫 읽기 후 재개 (confirm 완료 신호={})", who, signaled);
+			log.info("{} 잠금 획득 후 재개 (confirm 완료 신호={})", who, signaled);
 		}
 		return Optional.ofNullable(real);
 	}
