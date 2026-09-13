@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.member.repository.MemberRepositoryTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-13T09:59:48.725Z" hostname="BOOK-38TIIHH6ML" time="2.048">
+  <properties/>
+  <testcase name="saveTest()" classname="com.sido.backend.member.repository.MemberRepositoryTest" time="0.18"/>
+  <testcase name="addTest()" classname="com.sido.backend.member.repository.MemberRepositoryTest" time="1.867"/>
+  <system-out><![CDATA[2026-09-13T18:59:48.651+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.member.repository.MemberRepositoryTest]: MemberRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T18:59:48.717+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.member.repository.MemberRepositoryTest
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, region, stayCount, villageName, memberType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, 'ADMIN')
+Hibernate: 
+    select
+        count(*) 
+    from
+        Member hm1_0 
+    where
+        hm1_0.memberType='ADMIN'
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.role=?
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, region, stayCount, villageName, memberType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, 'ADMIN')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, region, stayCount, villageName, memberType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, 'ADMIN')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, region, stayCount, villageName, memberType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, 'ADMIN')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    select
+        count(*) 
+    from
+        Member hm1_0 
+    where
+        hm1_0.memberType='ADMIN'
+Hibernate: 
+    select
+        m1_0.id,
+        m1_0.memberType,
+        m1_0.loginId,
+        m1_0.name,
+        m1_0.password,
+        m1_0.phone,
+        m1_0.role,
+        m1_0.region,
+        m1_0.stayCount,
+        m1_0.villageName 
+    from
+        Member m1_0 
+    where
+        m1_0.role=?
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

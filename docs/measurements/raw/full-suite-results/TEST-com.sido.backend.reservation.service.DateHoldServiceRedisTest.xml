@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.reservation.service.DateHoldServiceRedisTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-13T09:59:51.597Z" hostname="BOOK-38TIIHH6ML" time="0.14">
+  <properties/>
+  <testcase name="토큰 불일치 release → 키 유지 (남의 hold를 지우지 않음)" classname="com.sido.backend.reservation.service.DateHoldServiceRedisTest" time="0.033"/>
+  <testcase name="ABA — 이전 토큰 A로 해제해도 재선점한 B의 키는 유지" classname="com.sido.backend.reservation.service.DateHoldServiceRedisTest" time="0.025"/>
+  <testcase name="부분 acquire 실패 롤백 → 이번 토큰으로 잡은 키만 제거, 경쟁 키는 유지" classname="com.sido.backend.reservation.service.DateHoldServiceRedisTest" time="0.024"/>
+  <testcase name="토큰 일치 release → 키 삭제됨" classname="com.sido.backend.reservation.service.DateHoldServiceRedisTest" time="0.02"/>
+  <testcase name="null 토큰 release → 어떤 키도 삭제하지 않는 no-op" classname="com.sido.backend.reservation.service.DateHoldServiceRedisTest" time="0.014"/>
+  <testcase name="키가 이미 없음 → 예외 없이 no-op" classname="com.sido.backend.reservation.service.DateHoldServiceRedisTest" time="0.015"/>
+  <system-out><![CDATA[2026-09-13T18:59:51.524+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.reservation.service.DateHoldServiceRedisTest]: DateHoldServiceRedisTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T18:59:51.589+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.reservation.service.DateHoldServiceRedisTest
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

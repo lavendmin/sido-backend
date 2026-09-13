@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.reservation.repository.ReservationRepositoryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-13T09:59:51.379Z" hostname="BOOK-38TIIHH6ML" time="0.141">
+  <properties/>
+  <testcase name="cancelReservation()" classname="com.sido.backend.reservation.repository.ReservationRepositoryTest" time="0.057"/>
+  <testcase name="checkUpComming()" classname="com.sido.backend.reservation.repository.ReservationRepositoryTest" time="0.037"/>
+  <testcase name="checkReservation()" classname="com.sido.backend.reservation.repository.ReservationRepositoryTest" time="0.043"/>
+  <system-out><![CDATA[2026-09-13T18:59:51.292+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.reservation.repository.ReservationRepositoryTest]: ReservationRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T18:59:51.374+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.reservation.repository.ReservationRepositoryTest
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        case 
+            when count(r1_0.id)>0 
+                then 1 
+            else 0 
+    end 
+from
+    Reservation r1_0 
+where
+    r1_0.stay=? 
+    and r1_0.resrvStatus='RESERVED' 
+    and r1_0.visitStatus='UPCOMING'
+2026-09-13T18:59:51.423+09:00  WARN 949696 --- [backend] [    Test worker] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [updatedAt] property of the [com.sido.backend.reservation.entity.Reservation] entity was modified, but it won't be updated because the property is immutable.
+Hibernate: 
+    update
+        Reservation 
+    set
+        endDate=?,
+        holdToken=?,
+        isFarm=?,
+        member=?,
+        pendingExpiresAt=?,
+        personCnt=?,
+        reservedAt=?,
+        resrvStatus=?,
+        startDate=?,
+        stay=?,
+        visitStatus=? 
+    where
+        id=?
+Hibernate: 
+    select
+        case 
+            when count(r1_0.id)>0 
+                then 1 
+            else 0 
+    end 
+from
+    Reservation r1_0 
+where
+    r1_0.stay=? 
+    and r1_0.resrvStatus='RESERVED' 
+    and r1_0.visitStatus='UPCOMING'
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        case 
+            when count(r1_0.id)>0 
+                then 1 
+            else 0 
+    end 
+from
+    Reservation r1_0 
+where
+    r1_0.stay=? 
+    and r1_0.resrvStatus='RESERVED' 
+    and r1_0.visitStatus='UPCOMING'
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, memberType) 
+    values
+        (?, ?, ?, ?, ?, 'USER')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Reservation
+        (endDate, holdToken, isFarm, member, pendingExpiresAt, personCnt, reservedAt, resrvStatus, startDate, stay, visitStatus) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        count(*) 
+    from
+        Reservation r1_0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

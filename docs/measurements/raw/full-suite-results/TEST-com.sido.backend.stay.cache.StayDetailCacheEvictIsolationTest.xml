@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.stay.cache.StayDetailCacheEvictIsolationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-13T10:00:28.001Z" hostname="BOOK-38TIIHH6ML" time="1.134">
+  <properties/>
+  <testcase name="evict 예외 격리: Redis evict 실패해도 DB 커밋·서비스 호출 정상 반환 유지, ERROR 로그 기록" classname="com.sido.backend.stay.cache.StayDetailCacheEvictIsolationTest" time="1.134"/>
+  <system-out><![CDATA[2026-09-13T19:00:13.899+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.stay.cache.StayDetailCacheEvictIsolationTest]: StayDetailCacheEvictIsolationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T19:00:13.949+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.stay.cache.StayDetailCacheEvictIsolationTest
+2026-09-13T19:00:13.959+09:00  INFO 949696 --- [backend] [    Test worker] m.p.springdotenv.DotenvPropertySource    : Initialized Dotenv with DotenvConfig{directory=null, filename=null, ignoreIfMalformed=false, ignoreIfMissing=true, systemProperties=false, prefix=null}
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.5.4)
+
+2026-09-13T19:00:14.036+09:00  INFO 949696 --- [backend] [    Test worker] .b.s.c.StayDetailCacheEvictIsolationTest : Starting StayDetailCacheEvictIsolationTest using Java 21.0.11 with PID 949696 (started by somin in C:\MyProjects\SIDO\sido-backend)
+2026-09-13T19:00:14.037+09:00  INFO 949696 --- [backend] [    Test worker] .b.s.c.StayDetailCacheEvictIsolationTest : The following 1 profile is active: "local"
+2026-09-13T19:00:15.056+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-13T19:00:15.056+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-13T19:00:15.240+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 175 ms. Found 10 JPA repository interfaces.
+2026-09-13T19:00:15.244+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode
+2026-09-13T19:00:15.245+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-09-13T19:00:15.297+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.festival.repository.FestivalRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.member.repository.HostMemberRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.member.repository.MemberRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.realestate.repository.RealEstateImageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.realestate.repository.RealEstateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.reservation.repository.ReservationDayRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.reservation.repository.ReservationRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.stay.repository.StayAvailDateRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.298+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.stay.repository.StayImageRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.299+09:00  INFO 949696 --- [backend] [    Test worker] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.sido.backend.stay.repository.StayRepository; If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository
+2026-09-13T19:00:15.299+09:00  INFO 949696 --- [backend] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 50 ms. Found 0 Redis repository interfaces.
+2026-09-13T19:00:15.555+09:00  INFO 949696 --- [backend] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-13T19:00:15.565+09:00  INFO 949696 --- [backend] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-13T19:00:15.597+09:00  INFO 949696 --- [backend] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-13T19:00:15.600+09:00  INFO 949696 --- [backend] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Starting...
+2026-09-13T19:00:15.628+09:00  INFO 949696 --- [backend] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-5 - Added connection com.mysql.cj.jdbc.ConnectionImpl@22b97a4e
+2026-09-13T19:00:15.628+09:00  INFO 949696 --- [backend] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-5 - Start completed.
+2026-09-13T19:00:15.633+09:00  INFO 949696 --- [backend] [    Test worker] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-5)']
+	Database driver: undefined/unknown
+	Database version: 8.0.46
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-09-13T19:00:15.924+09:00  INFO 949696 --- [backend] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: 
+    alter table FestivalImage 
+       drop 
+       foreign key FKcf8s98w64vst6pn12s1nkjedd
+Hibernate: 
+    alter table RealEstateImage 
+       drop 
+       foreign key FKpfwoyfqct927itycte6lxglc9
+Hibernate: 
+    alter table Reservation 
+       drop 
+       foreign key fk_Reservation_Member
+Hibernate: 
+    alter table Reservation 
+       drop 
+       foreign key fk_Reservation_Stay
+Hibernate: 
+    alter table ReservationDay 
+       drop 
+       foreign key fk_reservationDay_reservation
+Hibernate: 
+    alter table ReservationDay 
+       drop 
+       foreign key fk_reservationDay_stay
+Hibernate: 
+    alter table Stay 
+       drop 
+       foreign key fk_Stay_Member_host
+Hibernate: 
+    alter table StayAvailDate 
+       drop 
+       foreign key fk_StayAvailDate_Stay
+Hibernate: 
+    alter table StayImage 
+       drop 
+       foreign key FK4x0ck2pbgme08qsqqmu0i9cys
+Hibernate: 
+    drop table if exists Festival
+Hibernate: 
+    drop table if exists FestivalImage
+Hibernate: 
+    drop table if exists Member
+Hibernate: 
+    drop table if exists RealEstate
+Hibernate: 
+    drop table if exists RealEstateImage
+Hibernate: 
+    drop table if exists Reservation
+Hibernate: 
+    drop table if exists ReservationDay
+Hibernate: 
+    drop table if exists Stay
+Hibernate: 
+    drop table if exists StayAvailDate
+Hibernate: 
+    drop table if exists StayImage
+Hibernate: 
+    create table Festival (
+        endDate date not null,
+        price integer not null,
+        startDate date not null,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        city varchar(31) not null,
+        title varchar(64) not null,
+        location varchar(100) not null,
+        description varchar(1000) not null,
+        url varchar(2000) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table FestivalImage (
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        festival bigint not null,
+        id bigint not null auto_increment,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        s3Key varchar(512) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table Member (
+        stayCount int default 0 not null,
+        id bigint not null auto_increment,
+        memberType varchar(10) not null,
+        phone varchar(15) not null,
+        name varchar(30),
+        villageName varchar(30),
+        loginId varchar(50) not null,
+        region varchar(100),
+        password varchar(250) not null,
+        role enum ('ROLE_ADMIN','ROLE_USER'),
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table RealEstate (
+        area integer,
+        areaSize float(53),
+        capacity integer,
+        roomCount integer,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        price bigint,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        description varchar(255),
+        house varchar(255),
+        location varchar(255),
+        tradeType varchar(255),
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table RealEstateImage (
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        realEstate bigint not null,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        s3Key varchar(512) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table Reservation (
+        endDate date not null,
+        isFarm bit,
+        personCnt integer not null,
+        startDate date not null,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        member bigint,
+        pendingExpiresAt datetime(6),
+        reservedAt datetime(6),
+        stay bigint,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        holdToken varchar(255),
+        resrvStatus enum ('CANCELLED','PENDING','RESERVED'),
+        visitStatus enum ('COMPLETED','IN_PROGRESS','UPCOMING'),
+        primary key (id),
+        check (    (resrvStatus = 'PENDING' AND isFarm IS NULL AND visitStatus IS NULL AND holdToken IS NOT NULL)
+OR (resrvStatus = 'RESERVED' AND isFarm IS NOT NULL AND visitStatus IS NOT NULL AND holdToken IS NULL)
+OR (resrvStatus = 'CANCELLED' AND visitStatus IS NULL AND holdToken IS NULL)
+)
+    ) engine=InnoDB
+Hibernate: 
+    create table ReservationDay (
+        date date not null,
+        id bigint not null auto_increment,
+        reservation bigint,
+        stay bigint,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table Stay (
+        areaSize integer not null,
+        capacity integer not null,
+        isActive bit not null,
+        isHomestay bit not null,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        host bigint,
+        id bigint not null auto_increment,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        hostName varchar(9),
+        hostPhone varchar(31),
+        address varchar(64) not null,
+        detailAddress varchar(64),
+        title varchar(64) not null,
+        description varchar(1000) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table StayAvailDate (
+        availableDate date not null,
+        id bigint not null auto_increment,
+        stay bigint,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    create table StayImage (
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP null,
+        id bigint not null auto_increment,
+        stay bigint not null,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP null,
+        s3Key varchar(512) not null,
+        primary key (id)
+    ) engine=InnoDB
+Hibernate: 
+    alter table Member 
+       add constraint UKredywmoh8x2ku6ab3ghhkk2nr unique (phone)
+Hibernate: 
+    alter table Member 
+       add constraint UK3gj1odv84axhg8cjrvgx4xxhj unique (loginId)
+Hibernate: 
+    alter table ReservationDay 
+       add constraint uk_ReservationDay_stay_date unique (stay, date)
+Hibernate: 
+    alter table Stay 
+       add constraint uk_Stay_address_detailAddress unique (address, detailAddress)
+Hibernate: 
+    alter table StayAvailDate 
+       add constraint uk_StayAvailDate_stay_availableDate unique (stay, availableDate)
+Hibernate: 
+    alter table FestivalImage 
+       add constraint FKcf8s98w64vst6pn12s1nkjedd 
+       foreign key (festival) 
+       references Festival (id)
+Hibernate: 
+    alter table RealEstateImage 
+       add constraint FKpfwoyfqct927itycte6lxglc9 
+       foreign key (realEstate) 
+       references RealEstate (id)
+Hibernate: 
+    alter table Reservation 
+       add constraint fk_Reservation_Member 
+       foreign key (member) 
+       references Member(id) 
+       on delete set null
+Hibernate: 
+    alter table Reservation 
+       add constraint fk_Reservation_Stay 
+       foreign key (stay) 
+       references Stay(id) 
+       on delete set null
+Hibernate: 
+    alter table ReservationDay 
+       add constraint fk_reservationDay_reservation 
+       foreign key (reservation) 
+       references Reservation(id) 
+       on delete cascade
+Hibernate: 
+    alter table ReservationDay 
+       add constraint fk_reservationDay_stay 
+       foreign key (stay) 
+       references Stay(id) 
+       on delete set null
+Hibernate: 
+    alter table Stay 
+       add constraint fk_Stay_Member_host 
+       foreign key (host) 
+       references Member(id)
+on delete cascade
+on update cascade
+
+Hibernate: 
+    alter table StayAvailDate 
+       add constraint fk_StayAvailDate_Stay 	foreign key (stay)
+	   
+       references Stay(id)
+	    
+       on DELETE cascade 
+       on UPDATE cascade
+
+Hibernate: 
+    alter table StayImage 
+       add constraint FK4x0ck2pbgme08qsqqmu0i9cys 
+       foreign key (stay) 
+       references Stay (id)
+2026-09-13T19:00:17.550+09:00  INFO 949696 --- [backend] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-13T19:00:17.721+09:00  INFO 949696 --- [backend] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name customUserDetailsService
+2026-09-13T19:00:23.737+09:00  WARN 949696 --- [backend] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-13T19:00:23.865+09:00  INFO 949696 --- [backend] [    Test worker] com.sido.backend.config.SecurityConfig   : ***** SecurityConfig - Security Filter Chain *****
+2026-09-13T19:00:27.754+09:00  INFO 949696 --- [backend] [    Test worker] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-09-13T19:00:27.756+09:00  INFO 949696 --- [backend] [    Test worker] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@3f0bb37]]
+2026-09-13T19:00:27.758+09:00  INFO 949696 --- [backend] [    Test worker] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-09-13T19:00:27.967+09:00  INFO 949696 --- [backend] [    Test worker] .b.s.c.StayDetailCacheEvictIsolationTest : Started StayDetailCacheEvictIsolationTest in 14.011 seconds (process running for 144.939)
+Hibernate: 
+    select
+        r1_0.id 
+    from
+        Reservation r1_0 
+    where
+        r1_0.resrvStatus=? 
+        and r1_0.pendingExpiresAt<?
+Hibernate: 
+    insert 
+    into
+        Member
+        (loginId, name, password, phone, role, region, stayCount, villageName, memberType) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, 'ADMIN')
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, host, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+2026-09-13T19:00:28.605+09:00  WARN 949696 --- [backend] [    Test worker] o.h.p.entity.AbstractEntityPersister     : HHH000502: The [updatedAt] property of the [com.sido.backend.stay.entity.Stay] entity was modified, but it won't be updated because the property is immutable.
+Hibernate: 
+    update
+        Stay 
+    set
+        address=?,
+        areaSize=?,
+        capacity=?,
+        description=?,
+        detailAddress=?,
+        host=?,
+        hostName=?,
+        hostPhone=?,
+        isActive=?,
+        isHomestay=?,
+        title=? 
+    where
+        id=?
+2026-09-13T19:00:28.671+09:00 ERROR 949696 --- [backend] [    Test worker] c.s.b.s.e.StayDetailCacheEvictListener   : 숙소 상세 캐시 evict 실패 stayId=53 ? DB 변경은 이미 커밋됨, 최대 TTL 5분까지 낡은 캐시 가능
+
+java.lang.RuntimeException: forced redis evict failure
+	at com.sido.backend.stay.service.StayDetailCacheService.evictDetail(StayDetailCacheService.java:51) ~[main/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:360) ~[spring-aop-6.2.9.jar:6.2.9]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196) ~[spring-aop-6.2.9.jar:6.2.9]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163) ~[spring-aop-6.2.9.jar:6.2.9]
+	at org.springframework.cache.interceptor.CacheInterceptor.lambda$invoke$0(CacheInterceptor.java:55) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.cache.interceptor.CacheAspectSupport.invokeOperation(CacheAspectSupport.java:431) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.cache.interceptor.CacheAspectSupport.evaluate(CacheAspectSupport.java:601) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.cache.interceptor.CacheAspectSupport.execute(CacheAspectSupport.java:448) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.cache.interceptor.CacheAspectSupport.execute(CacheAspectSupport.java:410) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.cache.interceptor.CacheInterceptor.invoke(CacheInterceptor.java:65) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.9.jar:6.2.9]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:728) ~[spring-aop-6.2.9.jar:6.2.9]
+	at com.sido.backend.stay.service.StayDetailCacheService$$SpringCGLIB$$0.evictDetail(<generated>) ~[main/:na]
+	at com.sido.backend.stay.event.StayDetailCacheEvictListener.onStayDetailChanged(StayDetailCacheEvictListener.java:39) ~[main/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:383) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:255) ~[spring-context-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.event.TransactionalApplicationListenerSynchronization.processEventWithCallbacks(TransactionalApplicationListenerSynchronization.java:65) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.event.TransactionalApplicationListenerSynchronization$PlatformSynchronization.afterCompletion(TransactionalApplicationListenerSynchronization.java:118) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.support.TransactionSynchronizationUtils.invokeAfterCompletion(TransactionSynchronizationUtils.java:202) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.invokeAfterCompletion(AbstractPlatformTransactionManager.java:1047) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.triggerAfterCompletion(AbstractPlatformTransactionManager.java:1022) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.processCommit(AbstractPlatformTransactionManager.java:839) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.commit(AbstractPlatformTransactionManager.java:758) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.commitTransactionAfterReturning(TransactionAspectSupport.java:698) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:416) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119) ~[spring-tx-6.2.9.jar:6.2.9]
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184) ~[spring-aop-6.2.9.jar:6.2.9]
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:728) ~[spring-aop-6.2.9.jar:6.2.9]
+	at com.sido.backend.stay.service.StayServiceImpl$$SpringCGLIB$$0.editStay(<generated>) ~[main/:na]
+	at com.sido.backend.stay.cache.StayDetailCacheEvictIsolationTest.evict예외_격리_DB커밋_서비스정상반환_로그기록(StayDetailCacheEvictIsolationTest.java:101) ~[test/:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:775) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:479) ~[junit-platform-commons-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:60) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:131) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:161) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:152) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:91) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:112) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:94) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:106) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:64) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:45) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:37) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:93) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:87) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$7(TestMethodTestDescriptor.java:216) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:212) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:137) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:69) ~[junit-jupiter-engine-5.12.2.jar:5.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:156) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[na:na]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596) ~[na:na]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:41) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$6(NodeTestTask.java:160) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$8(NodeTestTask.java:146) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:137) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$9(NodeTestTask.java:144) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:73) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:143) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:100) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:35) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:57) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:54) ~[junit-platform-engine-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:201) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:170) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:94) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:59) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:142) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:58) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:103) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:85) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$1(InterceptingLauncher.java:39) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:38) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:47) ~[junit-platform-launcher-1.12.2.jar:1.12.2]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.processAllTestClasses(JUnitPlatformTestClassProcessor.java:124) ~[na:na]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.access$000(JUnitPlatformTestClassProcessor.java:99) ~[na:na]
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor.stop(JUnitPlatformTestClassProcessor.java:94) ~[na:na]
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.stop(SuiteTestClassProcessor.java:63) ~[na:na]
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) ~[na:na]
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580) ~[na:na]
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36) ~[na:na]
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24) ~[na:na]
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33) ~[na:na]
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92) ~[na:na]
+	at jdk.proxy1/jdk.proxy1.$Proxy4.stop(Unknown Source) ~[na:na]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$3.run(TestWorker.java:200) ~[na:na]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:132) ~[na:na]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103) ~[na:na]
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63) ~[na:na]
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56) ~[na:na]
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122) ~[na:na]
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72) ~[na:na]
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69) ~[gradle-worker.jar:na]
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74) ~[gradle-worker.jar:na]
+
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        s1_0.id,
+        s1_0.address,
+        s1_0.areaSize,
+        s1_0.capacity,
+        s1_0.createdAt,
+        s1_0.description,
+        s1_0.detailAddress,
+        h1_0.id,
+        h1_0.loginId,
+        h1_0.name,
+        h1_0.password,
+        h1_0.phone,
+        h1_0.role,
+        h1_0.region,
+        h1_0.stayCount,
+        h1_0.villageName,
+        s1_0.hostName,
+        s1_0.hostPhone,
+        s1_0.isActive,
+        s1_0.isHomestay,
+        s1_0.title,
+        s1_0.updatedAt 
+    from
+        Stay s1_0 
+    left join
+        (select
+            * 
+        from
+            Member t 
+        where
+            t.memberType='ADMIN') h1_0 
+            on h1_0.id=s1_0.host 
+    where
+        s1_0.id=?
+Hibernate: 
+    select
+        i1_0.stay,
+        i1_0.id,
+        i1_0.createdAt,
+        i1_0.s3Key,
+        i1_0.updatedAt 
+    from
+        StayImage i1_0 
+    where
+        i1_0.stay=?
+Hibernate: 
+    delete 
+    from
+        Stay 
+    where
+        id=?
+Hibernate: 
+    select
+        hm1_0.id,
+        hm1_0.loginId,
+        hm1_0.name,
+        hm1_0.password,
+        hm1_0.phone,
+        hm1_0.role,
+        hm1_0.region,
+        hm1_0.stayCount,
+        hm1_0.villageName 
+    from
+        Member hm1_0 
+    where
+        hm1_0.memberType='ADMIN' 
+        and hm1_0.id=?
+Hibernate: 
+    delete 
+    from
+        Member 
+    where
+        id=?
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
