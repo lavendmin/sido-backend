@@ -16,6 +16,15 @@
 - 확정된 점유일(`ReservationDay`)은 반드시 예약 가능일(`StayAvailDate`)로 남아 있다.
 - 확정된 예정 예약이 있으면 숙소 비활성화는 거절된다(기존 정책 유지).
 
+## 테스트가 단언하는 것
+
+'둘 다 성공 금지'만이 아니라 **올바른 승자와 패자의 정확한 도메인 예외**까지 단언한다(양쪽이 예기치 못한 오류로 실패해 통과하는 것을 방지).
+
+- 운영자 선행(강제 인터리빙): 운영자 작업 성공 + 확정은 `ConflictException`(날짜 닫힘) / `ResourceGoneException`(숙소 비활성) 으로 거절 + 점유 행 없음.
+- 확정 선행(순차): 확정 성공 + 이후 `updateOpenDates`는 `ConflictException`, `deleteStay`는 `hasUpcomingReservations=true`로 거절.
+- 운영자 선행 트랜잭션 롤백: 운영자가 Stay 잠금을 쥔 뒤 롤백하면, 확정은 원래(그대로 열린) 상태를 보고 성공.
+- 잠금 검증: `StayRepository.findByIdForUpdate`가 실제 `PESSIMISTIC_WRITE` 잠금을 획득하는지 별도 단언(경합 테스트가 잠금을 대체하므로 `@Lock` 회귀를 놓치지 않도록).
+
 ## 결과
 
 ### 도입 전 (baseline, RED)
@@ -59,7 +68,8 @@
 
 ## 회귀
 
-전체 테스트 스위트 41건 통과. 기존 수명주기·동시성·Redis·캐시 테스트 회귀 없음.
+전체 테스트 스위트 45건 통과(실패·오류 0). 기존 수명주기·동시성·Redis·캐시 테스트 회귀 없음.
+클래스별 결과는 `raw/full-suite-results/SUMMARY.md`와 같은 폴더의 JUnit XML 참조.
 
 ## 범위 밖
 

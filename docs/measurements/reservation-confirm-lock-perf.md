@@ -31,13 +31,15 @@
 
 같은 숙소에 겹치지 않는 2박 구간 100개를 각 VU가 생성 후 동시 확정. **경합이 없으므로 100건 모두 성공해야 한다.**
 
-| 버전 | 5xx율 중앙값 | 확정 성공(RESERVED) 중앙값 | confirm p90 중앙값 |
-|---|---|---|---|
-| A | 약 14% | 약 71 / 100 | (실패 다수로 무의미) |
-| B | 0% | 100 / 100 | 1.25s |
-| C | 0% | 100 / 100 | 0.99s |
+지표는 **확정 요청 100건 기준**으로 읽어야 한다. `http_req_failed`는 로그인 1회 + 생성 100회 + 확정 100회(총 201요청)를 분모로 하므로 확정 실패율보다 낮게 나온다.
 
-**핵심 발견 — A의 데드락.** A는 인접한 서로 다른 날짜 범위를 동시 확정할 때 `select ... from ReservationDay ... for update`에서 **gap lock 데드락**이 발생한다(앱 로그 `Deadlock found when trying to get lock`, SQLState 40001, 실행당 수백 건). 그 결과 약 14%가 5xx로 실패하고 100건 중 약 71건만 확정된다. 정렬 잠금(`ORDER BY`)은 겹치는 범위의 데드락은 막지만, 인접한 서로 다른 범위의 gap lock 데드락은 막지 못한다.
+| 버전 | 확정 성공(RESERVED) 중앙값 | 확정 실패(=5xx) / 확정 100건 | 참고: http_req_failed(전체 201요청) | confirm p90 중앙값 |
+|---|---|---|---|---|
+| A | 약 71 / 100 | 약 29 / 100 (범위 19~38) | 약 14% | (실패 다수로 무의미) |
+| B | 100 / 100 | 0 / 100 | 0% | 1.25s |
+| C | 100 / 100 | 0 / 100 | 0% | 0.99s |
+
+**핵심 발견 — A의 데드락.** A는 인접한 서로 다른 날짜 범위를 동시 확정할 때 `select ... from ReservationDay ... for update`에서 **데드락(InnoDB 1213, SQLState 40001)**이 발생한다(앱 로그 `Deadlock found when trying to get lock`, 실행당 수백 건 — `raw/perf/A-deadlock-excerpt.txt`). 그 결과 **확정 100건 중 약 29건이 5xx로 실패**하고 약 71건만 확정된다(전체 201요청 기준 `http_req_failed`는 약 14%). 인접한 범위의 `FOR UPDATE`가 잡는 gap lock 간 순환 대기가 유력한 원인이나, 보관된 발췌만으로 정확한 순환 관계까지 확정하지는 않았다(그 수준으로 단정하려면 InnoDB 데드락 상세 필요). 정렬 잠금(`ORDER BY`)은 겹치는 범위의 데드락은 막지만 이 경우는 막지 못한다.
 
 B·C는 확정을 Stay 행 잠금으로 직렬화하므로 이 데드락이 사라진다(5xx 0%, 100건 전부 성공). C는 날짜 범위 잠금을 제거해 B보다 빠르다.
 
@@ -70,3 +72,5 @@ docker compose up -d
 k6 run k6/reservation-confirm-distinct.js   # 시나리오 2
 RES_IDS=... k6 run k6/reservation-confirm-seeded.js  # 시나리오 1 (PENDING SQL 시드 필요)
 ```
+
+두 스크립트는 계약을 threshold 로 강제한다: distinct 는 `confirm_success rate==1.0`(확정 요청 전용, 로그인·생성 제외 — 겹치지 않는 100건은 전부 성공해야 실행 성공), seeded 는 `confirm_ok count==1`(정확히 1건만 확정). 따라서 A처럼 일부가 실패하면 k6 실행이 실패로 끝난다.

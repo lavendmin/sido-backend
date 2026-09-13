@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.sido.backend.stay.repository.StayRepositoryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-13T10:00:31.889Z" hostname="BOOK-38TIIHH6ML" time="0.528">
+  <properties/>
+  <testcase name="stayAddTest()" classname="com.sido.backend.stay.repository.StayRepositoryTest" time="0.136"/>
+  <testcase name="stayEditTest()" classname="com.sido.backend.stay.repository.StayRepositoryTest" time="0.034"/>
+  <testcase name="stayAvailAddTest()" classname="com.sido.backend.stay.repository.StayRepositoryTest" time="0.351"/>
+  <system-out><![CDATA[2026-09-13T19:00:31.167+09:00  INFO 949696 --- [backend] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.sido.backend.stay.repository.StayRepositoryTest]: StayRepositoryTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-13T19:00:31.862+09:00  INFO 949696 --- [backend] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.sido.backend.BackendApplication for test class com.sido.backend.stay.repository.StayRepositoryTest
+Hibernate: 
+    select
+        count(*) 
+    from
+        Stay s1_0
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        count(*) 
+    from
+        Stay s1_0
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    select
+        count(*) 
+    from
+        StayAvailDate sad1_0
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        Stay
+        (address, areaSize, capacity, description, detailAddress, isActive, isHomestay, title) 
+    values
+        (?, ?, ?, ?, ?, ?, ?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    insert 
+    into
+        StayAvailDate
+        (availableDate, stay) 
+    values
+        (?, ?)
+Hibernate: 
+    select
+        count(*) 
+    from
+        StayAvailDate sad1_0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

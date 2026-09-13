@@ -6,10 +6,11 @@
 import http from 'k6/http';
 import { check, fail } from 'k6';
 import exec from 'k6/execution';
-import { Trend, Counter } from 'k6/metrics';
+import { Trend, Counter, Rate } from 'k6/metrics';
 
 const confirmDuration = new Trend('confirm_duration', true); // 확정 요청만 (setup 생성 제외)
 const confirmOk = new Counter('confirm_ok');
+const confirmSuccess = new Rate('confirm_success'); // 확정 요청 전용 성공률 (로그인·생성 제외)
 
 const VUS = Number(__ENV.VUS || 100);
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8085';
@@ -28,7 +29,8 @@ export const options = {
     },
   },
   thresholds: {
-    http_req_failed: ['rate<0.01'], // 5xx·타임아웃만 카운트
+    http_req_failed: ['rate<0.01'],   // 전체 요청 중 5xx·타임아웃 (로그인·생성 포함)
+    confirm_success: ['rate==1.0'],   // 시나리오 계약: 겹치지 않는 100건 확정은 전부 성공해야 함
   },
 };
 
@@ -80,6 +82,7 @@ export default function (data) {
     jsonParams(data.cookie)
   );
   confirmDuration.add(res.timings.duration);
+  confirmSuccess.add(res.status === 200);
   if (res.status === 200) confirmOk.add(1);
   check(res, {
     'confirm 성공 (200)': (r) => r.status === 200,
