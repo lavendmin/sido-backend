@@ -1,0 +1,6 @@
+[워밍업(버림)] 5xx율=0.00% 확정성공=1 RESERVED=1 |     confirm_duration...............: avg=228.23ms min=49.06ms med=230.58ms max=405.39ms p(90)=374.04ms p(95)=388.84ms
+[측정1] 5xx율=0.00% 확정성공=1 RESERVED=1 |     confirm_duration...............: avg=235.87ms min=42.91ms med=233.07ms max=418.44ms p(90)=384.07ms p(95)=407.27ms
+[측정2] 5xx율=0.00% 확정성공=1 RESERVED=1 |     confirm_duration...............: avg=276.28ms min=50.42ms med=228.79ms max=587.11ms p(90)=552.66ms p(95)=569.03ms
+[측정3] 5xx율=0.00% 확정성공=1 RESERVED=1 |     confirm_duration...............: avg=265.53ms min=54.16ms med=273.44ms max=448.02ms p(90)=416.73ms p(95)=434.27ms
+[측정4] 5xx율=0.00% 확정성공=1 RESERVED=1 |     confirm_duration...............: avg=228.13ms min=47.64ms med=226.63ms max=408.96ms p(90)=375.61ms p(95)=390.41ms
+[측정5] 5xx율=0.00% 확정성공=1 RESERVED=1 |     confirm_duration...............: avg=218.99ms min=50.34ms med=216.41ms max=391.18ms p(90)=360.56ms p(95)=372.71ms
