@@ -52,10 +52,10 @@ import jakarta.persistence.PersistenceContext;
  * 예약 확정(고객)과 예약 가능일 변경·숙소 비활성화(운영자)의 경합 재현·계약 검증.
  * <p>
  * 두 운영자 경로는 "예약됐나?"를 검증한 뒤 삭제/비활성화한다. 이 검증과 변경 사이에 확정이 끼어들면
- * 확정 점유일이 예약 가능일에서 사라질 수 있다(계획 §1의 가설). 운영자가 Stay 행 잠금을 획득한 직후 지점을
+ * 확정 점유일이 예약 가능일에서 사라질 수 있다(코드 검토에서 발견한 가설). 운영자가 Stay 행 잠금을 획득한 직후 지점을
  * {@link MockitoSpyBean} 래치로 잡아, 그 잠금을 쥔 채로 확정을 완주시키려 시도해 경합을 결정론적으로 만든다.
  * <p>
- * 검증하는 서비스 계약(§2):
+ * 검증하는 서비스 규칙:
  * <ul>
  *   <li>충돌하는 확정과 날짜 닫기가 <b>모두 성공</b>하지 않는다(공통 보호 구간을 먼저 확보한 쪽이 이긴다).</li>
  *   <li>확정된 점유일({@code ReservationDay})은 반드시 예약 가능일({@code StayAvailDate})로 남아 있다.</li>
@@ -171,7 +171,7 @@ class ReservationVsDateChangeConcurrencyTest {
 		AtomicBoolean pausedOnce = new AtomicBoolean(false);
 
 		// updateOpenDates가 Stay 행을 잠근 직후에 멈춰, 그 잠금을 쥔 채로 확정을 완주시키려 한다.
-		// baseline(잠금 없음)에서는 확정이 끼어들어 §2 위반이 재현되고, 공통 보호 규칙 도입 후에는
+		// baseline(잠금 없음)에서는 확정이 끼어들어 정합성 위반이 재현되고, 공통 보호 규칙 도입 후에는
 		// 확정이 이 Stay 잠금에 막혀 운영자가 이기고 확정은 최신 상태 검사로 거절된다.
 		doAnswer(invocation -> pauseThenFind(invocation, reachedCheck, confirmDone, pausedOnce, "updateOpenDates"))
 			.when(spiedStayRepository).findByIdForUpdate(stayId);
@@ -219,9 +219,9 @@ class ReservationVsDateChangeConcurrencyTest {
 		log.info("결과: updateSucceeded={}, confirmSucceeded={}, status={}, avail={}, reserved={}",
 			updateSucceeded.get(), confirmSucceeded.get(), statusOf(rid), availDates, reservedDates);
 
-		// §2: 충돌하는 두 변경이 모두 성공하면 안 된다
+		// 서비스 규칙: 충돌하는 두 변경이 모두 성공하면 안 된다
 		assertThat(updateSucceeded.get() && confirmSucceeded.get())
-			.as("날짜 닫기와 확정이 모두 성공하면 확정 점유일이 예약 가능일에서 사라진다(§2 위반)")
+			.as("날짜 닫기와 확정이 모두 성공하면 확정 점유일이 예약 가능일에서 사라진다(정합성 위반)")
 			.isFalse();
 
 		// 핵심 불변식: 확정된 점유일은 반드시 예약 가능일로 남아 있어야 한다
@@ -246,7 +246,7 @@ class ReservationVsDateChangeConcurrencyTest {
 		AtomicBoolean pausedOnce = new AtomicBoolean(false);
 
 		// deleteStay가 Stay 행을 잠근 직후에 멈춰, 그 잠금을 쥔 채로 확정을 완주시키려 한다.
-		// baseline(잠금 없음)에서는 확정이 끼어들어 §2 위반이 재현되고, 공통 보호 규칙 도입 후에는
+		// baseline(잠금 없음)에서는 확정이 끼어들어 정합성 위반이 재현되고, 공통 보호 규칙 도입 후에는
 		// 확정이 이 Stay 잠금에 막혀 운영자가 이기고 확정은 최신 isActive 검사로 거절된다.
 		doAnswer(invocation -> pauseThenFind(invocation, reachedCheck, confirmDone, pausedOnce, "deleteStay"))
 			.when(spiedStayRepository).findByIdForUpdate(stayId);
@@ -296,10 +296,10 @@ class ReservationVsDateChangeConcurrencyTest {
 		log.info("에러: deleteErr={}, confirmErr={}",
 			String.valueOf(deleteErr.get()), String.valueOf(confirmErr.get()));
 
-		// §2 / 결정 2: 확정 성공과 숙소 비활성화가 모두 성공하면 안 된다
+		// 서비스 규칙(숙소 비활성화 정책): 확정 성공과 숙소 비활성화가 모두 성공하면 안 된다
 		boolean deletedReported = deleteResult.get() != null && deleteResult.get().deleted();
 		assertThat(confirmSucceeded.get() && deletedReported)
-			.as("확정 성공과 숙소 비활성화가 동시에 성공하면, 확정 예약이 비활성 숙소에 남는다(§2 위반)")
+			.as("확정 성공과 숙소 비활성화가 동시에 성공하면, 확정 예약이 비활성 숙소에 남는다(정합성 위반)")
 			.isFalse();
 
 		// 확정됐다면 숙소는 활성 상태로 유지되고, 점유일은 예약 가능일에 남아 있어야 한다
