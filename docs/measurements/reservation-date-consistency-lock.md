@@ -4,7 +4,7 @@
 경합할 때의 정합성을, 공통 Stay 행 잠금 도입 전(before) / 후(after)로 비교 측정한다.
 
 - 대상 브랜치: `refactor/reservation-date-consistency`
-- 기준선: `origin/develop` (`5f51f02`)
+- 기준선: `origin/develop` (`9cc9b8d`)
 - 환경: MySQL 8.0 (REPEATABLE READ), Redis 7. 실 DB·Redis 통합 테스트.
 - 방법: `@MockitoSpyBean`으로 운영자 경로가 Stay 행 잠금을 획득한 직후를 래치로 잡아, 그 창에서
   확정을 완주시켜 경합을 결정적으로 만든다. 래치는 타임아웃으로 재개해 교착을 막는다.

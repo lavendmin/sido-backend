@@ -2,7 +2,7 @@
 
 예약 확정 경로의 잠금 전략을 세 가지로 비교한다.
 
-- **A** — 현 `develop`(`5f51f02`). Stay 행 잠금 없음. 날짜 범위 잠금(`StayAvailDate`·`ReservationDay` FOR UPDATE) 사용.
+- **A** — 현 `develop`(`9cc9b8d`). Stay 행 잠금 없음. 날짜 범위 잠금(`StayAvailDate`·`ReservationDay` FOR UPDATE) 사용.
 - **B** — 이 브랜치. Stay 행 잠금으로 확정·예약가능일 변경·숙소 비활성화 직렬화 + 날짜 범위 잠금 유지.
 - **C** — B에서 날짜 범위 잠금만 제거(Stay 행 잠금 + 유니크 제약에 의존). 실험용 변형, 코드에는 미포함. **정합성 미충족으로 기각(아래 참조).**
 
