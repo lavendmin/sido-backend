@@ -11,7 +11,7 @@
 |---|---|
 | 팀 프로젝트 | 2025.08.13 ~ 2025.09.11 · 5인 풀스택 팀 |
 | 담당 역할 | 백엔드 리더 · 예약 도메인, 인증·인가, 예외 응답, CI/CD 및 배포 환경 |
-| 개인 고도화 | 팀 종료 후 동시성 실험, Redis 선점, 조회 캐싱 추가 · 2026년 8월 예약·캐시 정합성 보강 |
+| 개인 고도화 | 팀 종료 후 동시성 실험, Redis 선점, 조회 캐싱 추가 · 2026년 8~9월 예약·캐시 정합성 및 잠금 구조 보강 |
 
 ## 기술 스택
 
@@ -67,7 +67,7 @@
 
 ### 2. Redis 선점으로 확정 단계에 도달하는 경합 요청 축소
 
-![Redis 선점 전후 예약 흐름](docs/images/SA3_Redis_선점_예약_흐름_Before_After.png)
+![Redis 날짜 선점과 PENDING 생성 흐름](docs/images/SA3_Redis_선점_예약_흐름_Before_After.png)
 
 **문제**
 
@@ -97,7 +97,46 @@
 
 [선점 구현](src/main/java/com/sido/backend/reservation/service/DateHoldService.java) · [예약 처리](src/main/java/com/sido/backend/reservation/service/ReservationServiceImpl.java) · [E2E 부하 스크립트](k6/reservation-e2e-race.js)
 
-### 3. 정적 숙소 정보만 캐싱하고 가용성은 DB에서 확인
+### 3. 예약 확정과 운영자 변경을 같은 숙소 잠금으로 조율
+
+![숙소 공통 잠금과 확정 경로의 최신 읽기](docs/images/SA25_숙소_공통_잠금과_날짜_최신_조회.png)
+
+**문제**
+
+- 날짜 잠금만으로는 예약 확정과 운영자의 날짜 닫기·숙소 비활성화를 함께 제어하지 못함
+- 잠금 없는 날짜 조회는 REPEATABLE READ의 과거 스냅샷을 읽어, 이미 닫힌 날짜의 확정을 허용
+
+**개선**
+
+- 확정·예약 가능일 변경·숙소 비활성화가 같은 `Stay` 행의 비관적 잠금을 공유
+- 확정 시 이미 로드된 `Stay`를 `PESSIMISTIC_WRITE`로 refresh해 최신 활성 상태 확인
+- `StayAvailDate` → `ReservationDay` 순서의 `FOR UPDATE` 조회를 유지해 최신 날짜·점유 상태로 검증
+- 생성 단계 Redis 선점, 확정 점유의 DB 유니크 제약과 역할 분리
+
+**대안 비교**
+
+| 대안 | 판단 |
+|---|---|
+| 기존 날짜 잠금만 유지 | 운영자 변경과 확정이 함께 성공하는 규칙 위반 재현 |
+| 숙소 공통 잠금 + 날짜 잠금 조회 | 운영자 변경 조율과 최신 읽기를 함께 확보해 채택 |
+| 숙소 공통 잠금 + 잠금 없는 날짜 조회 | 과거 스냅샷으로 날짜 닫기를 놓치는 오류 재현, 기각 |
+
+**검증 결과**
+
+| 검증 항목 | 기존 날짜 잠금 | 숙소 공통 잠금 + 날짜 잠금 |
+|---|---:|---:|
+| 운영자 변경 선행 경합 | 변경·확정 모두 성공, 규칙 위반 | 변경 성공·확정 거절 |
+| 동일 날짜 100건 확정 p90 중앙값 | 0.38초 | 0.58초 |
+| 서로 다른 날짜 100건 확정 성공 중앙값 | 71건 | 100건 |
+| 서로 다른 날짜 부하의 데드락 | MySQL 1213 관측 | 해당 부하에서 미관측 |
+
+- 판단: 동일 날짜 확정의 대기 비용 증가를 수용하고 예약 규칙·최신 상태 확인 우선
+- 조건: 2026년 9월 로컬 MySQL 8(REPEATABLE READ)·Redis 7, 동일 계정 쿠키를 공유한 100 VU, 버전별 워밍업 1회 제외 후 5회 중앙값
+- 버전별 순차 블록 측정. 운영자 선행은 동시 경합 재현, 확정 선행은 순차 검증
+
+[확정 구현](src/main/java/com/sido/backend/reservation/service/ReservationServiceImpl.java) · [운영자 변경](src/main/java/com/sido/backend/stay/service/StayServiceImpl.java) · [정합성 검증](docs/measurements/reservation-date-consistency-lock.md) · [잠금 성능 비교](docs/measurements/reservation-confirm-lock-perf.md)
+
+### 4. 정적 숙소 정보만 캐싱하고 가용성은 DB에서 확인
 
 ![상세 조회의 캐싱 경계와 무효화](docs/images/SA4_상세_조회_캐싱_경계와_무효화.png)
 
@@ -134,6 +173,7 @@
 |---|---|
 | 선점 소유 토큰·부분 실패 보상·이전 소유자의 해제 | [DateHoldServiceRedisTest](src/test/java/com/sido/backend/reservation/service/DateHoldServiceRedisTest.java) |
 | 예약 만료 경계 | [PendingExpiryBoundaryTest](src/test/java/com/sido/backend/reservation/service/PendingExpiryBoundaryTest.java) |
+| 예약 확정과 날짜 변경·비활성화의 경합 | [ReservationVsDateChangeConcurrencyTest](src/test/java/com/sido/backend/reservation/concurrency/ReservationVsDateChangeConcurrencyTest.java) |
 | 예약 확정·취소의 상태 전이 경합 | [ReservationLifecycleConcurrencyTest](src/test/java/com/sido/backend/reservation/service/ReservationLifecycleConcurrencyTest.java) |
 | 커밋 전후 무효화·롤백 | [StayDetailCacheInvalidationTest](src/test/java/com/sido/backend/stay/cache/StayDetailCacheInvalidationTest.java) |
 | 캐시 무효화 예외의 서비스 호출 격리 | [StayDetailCacheEvictIsolationTest](src/test/java/com/sido/backend/stay/cache/StayDetailCacheEvictIsolationTest.java) |
